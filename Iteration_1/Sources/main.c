@@ -172,9 +172,11 @@ interrupt 7 void RTI_ISR(void) {
 
 	ATDCTL5 = 0x00;
 	while (!(ATDSTAT0 & 0x80)) {}
-	bpm = ATDDR0H - ATDDR0H % 4 + 4;
-	metcnt_correct();
-	bpmdisp();
+	if (bpm != ATDDR0H - ATDDR0H % 4 + 4) {
+		bpm = ATDDR0H - ATDDR0H % 4 + 4;
+		metcnt_correct();
+		bpmdisp();
+	}
 }
 
 /*
@@ -311,8 +313,9 @@ void pmsglcd(char str[]) {
 }
 
 void bpmdisp(void) {
+  chgline(LINE1);
 	print_c(bpm / 100 + '0');
 	print_c(bpm / 10 % 10 + '0');
-	print_c(bpm % 100 + '0');
+	print_c(bpm % 10 + '0');
 	pmsglcd(" BPM");
 }
