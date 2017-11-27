@@ -25,7 +25,7 @@ _startupData is allocated at 0xC031 and uses 6 Bytes
 extern struct _tagStartup {
   unsigned nofZeroOut     1
   _Range   pZeroOut       0x900     28
-  _Copy    *toCopyDownBeg 0xC5DA
+  _Copy    *toCopyDownBeg 0xC5BB
 } _startupData;
 
 *********************************************************************************************
@@ -35,8 +35,8 @@ Section Name                    Size  Type     From       To       Segment
 .init                             49     R     0xC000     0xC030   ROM_C000
 .startData                        10     R     0xC031     0xC03A   ROM_C000
 .rodata1                          15     R     0xC03B     0xC049   ROM_C000
-.text                           1068     R     0xC04A     0xC475   ROM_C000
-.copy                             15     R     0xC5DA     0xC5E8   ROM_C000
+.text                           1037     R     0xC04A     0xC456   ROM_C000
+.copy                             15     R     0xC5BB     0xC5C9   ROM_C000
 .stack                           256   R/W      0x800      0x8FF   RAM
 .data                              9   R/W      0x900      0x908   RAM
 .abs_section_8                     1   N/I        0x8        0x8   .absSeg0
@@ -264,11 +264,11 @@ Section Name                    Size  Type     From       To       Segment
 .abs_section_ffe0                  2     R     0xFFE0     0xFFE1   .absSeg222
 .abs_section_ffd6                  2     R     0xFFD6     0xFFD7   .absSeg223
 .bss                              19   R/W      0x909      0x91B   RAM
-RUNTIME                          356     R     0xC476     0xC5D9   ROM_C000
+RUNTIME                          356     R     0xC457     0xC5BA   ROM_C000
 .vectSeg224_vect                   2     R     0xFFFE     0xFFFF   .vectSeg224
 
 Summary of section sizes per section type:
-READ_ONLY (R):         5F1 (dec:     1521)
+READ_ONLY (R):         5D2 (dec:     1490)
 READ_WRITE (R/W):      11C (dec:      284)
 NO_INIT (N/I):         104 (dec:      260)
 
@@ -520,23 +520,25 @@ MODULE:                 -- main.c.o --
      send_byte                                 C361      11      17       2   .text       
      send_i                                    C372       7       7      11   .text       
      chgline                                   C379       B      11       2   .text       
-     print_c                                   C384       7       7       9   .text       
+     print_c                                   C384       7       7       7   .text       
      pmsglcd                                   C38B      1C      28       4   .text       
-     bpmdisp                                   C3A7      CF     207       6   .text       
+     print2digits                              C3A7      20      32       3   .text       
+     print3digits                              C3C7      41      65       1   .text       
+     bpmdisp                                   C408      4F      79       5   .text       
 - VARIABLES:
      STRING..BPM.1                             C03B       5       5       1   .rodata1    
      STRING.TS..2                              C040       4       4       1   .rodata1    
      STRING.B..3                               C044       3       3       1   .rodata1    
      STRING.S..4                               C047       3       3       1   .rodata1    
-     bpm                                        900       1       1       5   .data       
+     bpm                                        900       1       1       3   .data       
      prevpb                                     901       1       1       3   .data       
      lpbstat                                    902       1       1       3   .data       
      rpbstat                                    903       1       1       3   .data       
      runstp                                     904       1       1       3   .data       
-     tsnum                                      905       1       1       7   .data       
-     tsden                                      906       1       1       7   .data       
-     tsbeat                                     907       1       1      11   .data       
-     tssub                                      908       1       1       6   .data       
+     tsnum                                      905       1       1       6   .data       
+     tsden                                      906       1       1       6   .data       
+     tsbeat                                     907       1       1      10   .data       
+     tssub                                      908       1       1       5   .data       
      curcnt                                     909       2       2       4   .bss        
      metcnt                                     90B       2       2       4   .bss        
      pulsecnt                                   90D       2       2       3   .bss        
@@ -563,15 +565,15 @@ MODULE:                 -- Start12.c.o --
      __SEG_END_SSTACK                           900       0       0       1               
 MODULE:                 -- rtshc12.c.o (ansisi.lib) --
 - PROCEDURES:
-     _BSHRU                                    C476       8       8       1   RUNTIME     
-     _BDIVMODU                                 C47E       A      10       8   RUNTIME     
-     _BDIVMODS                                 C488       B      11       1   RUNTIME     
-     _lDivMod                                  C493      BE     190       4   RUNTIME     
-     _NEG_P                                    C551       F      15       7   RUNTIME     
-     _LDIVS                                    C560      35      53       1   RUNTIME     
-     _LMODS                                    C595      2A      42       1   RUNTIME     
-     _ILSEXT                                   C5BF       7       7       1   RUNTIME     
-     _CASE_CHECKED_BYTE                        C5C6      14      20       1   RUNTIME     
+     _BSHRU                                    C457       8       8       1   RUNTIME     
+     _BDIVMODU                                 C45F       A      10       8   RUNTIME     
+     _BDIVMODS                                 C469       B      11       1   RUNTIME     
+     _lDivMod                                  C474      BE     190       4   RUNTIME     
+     _NEG_P                                    C532       F      15       7   RUNTIME     
+     _LDIVS                                    C541      35      53       1   RUNTIME     
+     _LMODS                                    C576      2A      42       1   RUNTIME     
+     _ILSEXT                                   C5A0       7       7       1   RUNTIME     
+     _CASE_CHECKED_BYTE                        C5A7      14      20       1   RUNTIME     
 - VARIABLES:
 
 *********************************************************************************************
@@ -579,7 +581,7 @@ MODULE STATISTIC
   Name                                      Data   Code  Const
 ---------------------------------------------------------------------------------------------
   mc9s12c32.c.o                              260      0      0
-  main.c.o                                    28   1068     21
+  main.c.o                                    28   1037     21
   Start12.c.o                                  0     49      0
   rtshc12.c.o (ansisi.lib)                     0    356      0
   other                                      256     12     15
@@ -589,7 +591,8 @@ SECTION USE IN OBJECT-ALLOCATION SECTION
 ---------------------------------------------------------------------------------------------
 SECTION: ".text"
   initializations main RTI_ISR TIM_ISR SCI_ISR LED_met metcnt_correct shiftout 
-  lcdwait send_byte send_i chgline print_c pmsglcd bpmdisp 
+  lcdwait send_byte send_i chgline print_c pmsglcd print2digits print3digits 
+  bpmdisp 
 SECTION: ".data"
   bpm prevpb lpbstat rpbstat runstp tsnum tsden tsbeat tssub 
 SECTION: ".bss"
@@ -1276,15 +1279,15 @@ OBJECT LIST SORTED BY ADDRESS
      _RDRAD                                     273       1       1       0   .abs_section_273
      _PERAD                                     274       1       1       0   .abs_section_274
      _PPSAD                                     275       1       1       0   .abs_section_275
-     bpm                                        900       1       1       5   .data       
+     bpm                                        900       1       1       3   .data       
      prevpb                                     901       1       1       3   .data       
      lpbstat                                    902       1       1       3   .data       
      rpbstat                                    903       1       1       3   .data       
      runstp                                     904       1       1       3   .data       
-     tsnum                                      905       1       1       7   .data       
-     tsden                                      906       1       1       7   .data       
-     tsbeat                                     907       1       1      11   .data       
-     tssub                                      908       1       1       6   .data       
+     tsnum                                      905       1       1       6   .data       
+     tsden                                      906       1       1       6   .data       
+     tsbeat                                     907       1       1      10   .data       
+     tssub                                      908       1       1       5   .data       
      curcnt                                     909       2       2       4   .bss        
      metcnt                                     90B       2       2       4   .bss        
      pulsecnt                                   90D       2       2       3   .bss        
@@ -1316,18 +1319,20 @@ OBJECT LIST SORTED BY ADDRESS
      send_byte                                 C361      11      17       2   .text       
      send_i                                    C372       7       7      11   .text       
      chgline                                   C379       B      11       2   .text       
-     print_c                                   C384       7       7       9   .text       
+     print_c                                   C384       7       7       7   .text       
      pmsglcd                                   C38B      1C      28       4   .text       
-     bpmdisp                                   C3A7      CF     207       6   .text       
-     _BSHRU                                    C476       8       8       1   RUNTIME     
-     _BDIVMODU                                 C47E       A      10       8   RUNTIME     
-     _BDIVMODS                                 C488       B      11       1   RUNTIME     
-     _lDivMod                                  C493      BE     190       4   RUNTIME     
-     _NEG_P                                    C551       F      15       7   RUNTIME     
-     _LDIVS                                    C560      35      53       1   RUNTIME     
-     _LMODS                                    C595      2A      42       1   RUNTIME     
-     _ILSEXT                                   C5BF       7       7       1   RUNTIME     
-     _CASE_CHECKED_BYTE                        C5C6      14      20       1   RUNTIME     
+     print2digits                              C3A7      20      32       3   .text       
+     print3digits                              C3C7      41      65       1   .text       
+     bpmdisp                                   C408      4F      79       5   .text       
+     _BSHRU                                    C457       8       8       1   RUNTIME     
+     _BDIVMODU                                 C45F       A      10       8   RUNTIME     
+     _BDIVMODS                                 C469       B      11       1   RUNTIME     
+     _lDivMod                                  C474      BE     190       4   RUNTIME     
+     _NEG_P                                    C532       F      15       7   RUNTIME     
+     _LDIVS                                    C541      35      53       1   RUNTIME     
+     _LMODS                                    C576      2A      42       1   RUNTIME     
+     _ILSEXT                                   C5A0       7       7       1   RUNTIME     
+     _CASE_CHECKED_BYTE                        C5A7      14      20       1   RUNTIME     
      _Vector_20                                FFD6       2       2       0   .abs_section_ffd6
      _Vector_15                                FFE0       2       2       0   .abs_section_ffe0
      _Vector_7                                 FFF0       2       2       0   .abs_section_fff0
@@ -1351,37 +1356,37 @@ rtshc12.c.o (ansisi.lib):
 *********************************************************************************************
 COPYDOWN SECTION
 ---------------------------------------------------------------------------------------------
-------- ROM-ADDRESS: 0xC5DA ---- SIZE       4 ---
+------- ROM-ADDRESS: 0xC5BB ---- SIZE       4 ---
 Filling bytes inserted
  00090900
-------- ROM-ADDRESS: 0xC5DE ---- RAM-ADDRESS: 0x900 ---- SIZE       1 ---
+------- ROM-ADDRESS: 0xC5BF ---- RAM-ADDRESS: 0x900 ---- SIZE       1 ---
 Name of initialized Object : bpm
  78
-------- ROM-ADDRESS: 0xC5DF ---- RAM-ADDRESS: 0x901 ---- SIZE       1 ---
+------- ROM-ADDRESS: 0xC5C0 ---- RAM-ADDRESS: 0x901 ---- SIZE       1 ---
 Name of initialized Object : prevpb
  11
-------- ROM-ADDRESS: 0xC5E0 ---- RAM-ADDRESS: 0x902 ---- SIZE       1 ---
+------- ROM-ADDRESS: 0xC5C1 ---- RAM-ADDRESS: 0x902 ---- SIZE       1 ---
 Name of initialized Object : lpbstat
  10
-------- ROM-ADDRESS: 0xC5E1 ---- RAM-ADDRESS: 0x903 ---- SIZE       1 ---
+------- ROM-ADDRESS: 0xC5C2 ---- RAM-ADDRESS: 0x903 ---- SIZE       1 ---
 Name of initialized Object : rpbstat
  01
-------- ROM-ADDRESS: 0xC5E2 ---- RAM-ADDRESS: 0x904 ---- SIZE       1 ---
+------- ROM-ADDRESS: 0xC5C3 ---- RAM-ADDRESS: 0x904 ---- SIZE       1 ---
 Name of initialized Object : runstp
  01
-------- ROM-ADDRESS: 0xC5E3 ---- RAM-ADDRESS: 0x905 ---- SIZE       1 ---
+------- ROM-ADDRESS: 0xC5C4 ---- RAM-ADDRESS: 0x905 ---- SIZE       1 ---
 Name of initialized Object : tsnum
  04
-------- ROM-ADDRESS: 0xC5E4 ---- RAM-ADDRESS: 0x906 ---- SIZE       1 ---
+------- ROM-ADDRESS: 0xC5C5 ---- RAM-ADDRESS: 0x906 ---- SIZE       1 ---
 Name of initialized Object : tsden
  04
-------- ROM-ADDRESS: 0xC5E5 ---- RAM-ADDRESS: 0x907 ---- SIZE       1 ---
+------- ROM-ADDRESS: 0xC5C6 ---- RAM-ADDRESS: 0x907 ---- SIZE       1 ---
 Name of initialized Object : tsbeat
  04
-------- ROM-ADDRESS: 0xC5E6 ---- RAM-ADDRESS: 0x908 ---- SIZE       1 ---
+------- ROM-ADDRESS: 0xC5C7 ---- RAM-ADDRESS: 0x908 ---- SIZE       1 ---
 Name of initialized Object : tssub
  04
-------- ROM-ADDRESS: 0xC5E7 ---- SIZE       2 ---
+------- ROM-ADDRESS: 0xC5C8 ---- SIZE       2 ---
 Filling bytes inserted
  0000
 
@@ -1410,9 +1415,11 @@ send_i                    USES _PTT send_byte
 chgline                   USES send_i 
 print_c                   USES _PTT send_byte 
 pmsglcd                   USES tmpch print_c 
-bpmdisp                   USES chgline bpm _BDIVMODU print_c _BDIVMODS bpmdisp 
-                                STRING..BPM.1 pmsglcd STRING.TS..2 tsnum tsden STRING.B..3 
-                                tsbeat STRING.S..4 tssub 
+print2digits              USES _BDIVMODU print_c 
+print3digits              USES _BDIVMODU print_c _BDIVMODS 
+bpmdisp                   USES chgline bpm print3digits STRING..BPM.1 pmsglcd 
+                                STRING.TS..2 tsnum print2digits print_c tsden STRING.B..3 
+                                tsbeat STRING.S..4 tssub _BDIVMODU 
 _LDIVS                    USES _NEG_P _lDivMod 
 _LMODS                    USES _NEG_P _lDivMod 
 _Vector_20                USES SCI_ISR 
@@ -1460,18 +1467,30 @@ DEPENDENCY TREE
  |  |  |  | 
  |  |  |  +- send_i               (see above)
  |  |  |     
- |  |  +- _BDIVMODU           
- |  |  |    
- |  |  +- print_c             
+ |  |  +- print3digits        
  |  |  |  | 
- |  |  |  +- send_byte            (see above)
- |  |  |     
- |  |  +- _BDIVMODS           
- |  |  |    
+ |  |  |  +- _BDIVMODU           
+ |  |  |  |    
+ |  |  |  +- print_c             
+ |  |  |  |  | 
+ |  |  |  |  +- send_byte            (see above)
+ |  |  |  |     
+ |  |  |  +- _BDIVMODS           
+ |  |  |       
  |  |  +- pmsglcd             
- |  |     | 
- |  |     +- print_c              (see above)
- |  |        
+ |  |  |  | 
+ |  |  |  +- print_c              (see above)
+ |  |  |     
+ |  |  +- print2digits        
+ |  |  |  | 
+ |  |  |  +- _BDIVMODU            (see above)
+ |  |  |  |  
+ |  |  |  +- print_c              (see above)
+ |  |  |     
+ |  |  +- print_c              (see above)
+ |  |  |  
+ |  |  +- _BDIVMODU            (see above)
+ |  |     
  |  +- send_i               (see above)
  |  |  
  |  +- _BDIVMODU            (see above)
@@ -1506,6 +1525,6 @@ STATISTIC SECTION
 
 ExeFile:
 --------
-Number of blocks to be downloaded: 8
-Total size of all blocks to be downloaded: 1521
+Number of blocks to be downloaded: 9
+Total size of all blocks to be downloaded: 1490
 

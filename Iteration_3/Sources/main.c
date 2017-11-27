@@ -3,7 +3,6 @@
 #include <mc9s12c32.h>
 
 /* All functions after main should be initialized here */
-
 void LED_met(char led);
 void metcnt_correct(void);
 void shiftout(char);
@@ -13,26 +12,28 @@ void send_i(char);
 void chgline(char);
 void print_c(char);
 void pmsglcd(char[]);
+void print2digits(unsigned char x);
+void print3digits(unsigned char x);
 void bpmdisp(void);
 
 /* Variable declarations */
-unsigned int  curcnt   = 0;
-unsigned int  metcnt   = 0;
-unsigned int  pulsecnt = 0;
-unsigned int  beatcnt  = 0;
-unsigned int  meascnt  = 0;
-unsigned int  subcnt   = 0;
-unsigned char bpm      = 120;
-unsigned char error    = 0;
-unsigned char bacc     = 0;
-unsigned char macc     = 0;
-unsigned char sacc     = 0;
+unsigned int  curcnt   = 0;		// Number of TIM interrupts since the last MAX_DEN note
+unsigned int  metcnt   = 0;		// Number of TIM interrupts needed for each MAX_DEN note given control register settings, desired bpm, and desired beat length
+unsigned int  pulsecnt = 0;		// Number of MAX_DEN notes since the last normal pulse
+unsigned int  beatcnt  = 0;		// Number of MAX_DEN notes since the last beat pulse
+unsigned int  meascnt  = 0;		// Number of MAX_DEN notes since the last measure pulse
+unsigned int  subcnt   = 0;		// Number of MAX_DEN notes since the last subdivision pulse
+unsigned char bpm      = 120;	// Desired tempo in beats per minute
+unsigned char error    = 0;		// Rounding error: used to determine if metcnt should be rounded up or down
+unsigned char bacc     = 0;		// Beat accent setting
+unsigned char macc     = 0;		// Measure accent setting
+unsigned char sacc     = 0;		// Subdivision accent setting
 
-unsigned char leftpb  = 0x00;
-unsigned char rghtpb  = 0x00;
-unsigned char prevpb  = 0x11;
-unsigned char lpbstat = 0x10;
-unsigned char rpbstat = 0x01;
+unsigned char leftpb  = 0x00;	// Left pushbutton flag
+unsigned char rghtpb  = 0x00;	// Right pushbutton flag
+unsigned char prevpb  = 0x11;	// Previous pushbutton status
+unsigned char lpbstat = 0x10;	// Current left pushbutton status
+unsigned char rpbstat = 0x01;	// Current right pushbutton status
 
 char tmpch = 0;
 char runstp = 1;
@@ -61,7 +62,6 @@ const unsigned char MIN_DEN = 2;	// Minimum Subdivision allowed
 Initializations
 ***********************************************************************
 */
-
 void  initializations(void) {
 	/* Set the PLL speed (bus clock = 24 MHz) */
 	CLKSEL = CLKSEL & 0x80;	// disengage PLL from system
@@ -268,9 +268,11 @@ void main(void) {
 /*
 ***********************************************************************
 RTI interrupt service routine: RTI_ISR
+	Samples pushbuttons for setting controls
+		- leftpb for setting toggle
+		- rghtpb for setting value
 ***********************************************************************
 */
-
 interrupt 7 void RTI_ISR(void) {
 	// clear RTI interrupt flagt
 	CRGFLG = CRGFLG | 0x80;
@@ -289,9 +291,10 @@ interrupt 7 void RTI_ISR(void) {
 /*
 ***********************************************************************
 TIM interrupt service routine
+	Updates metronome curcnt (which counts up to metcnt, the length of
+	a MAX_DEN note)
 ***********************************************************************
 */
-
 interrupt 15 void TIM_ISR(void) {
 	// clear TIM CH 7 interrupt flag
 	TFLG1 = TFLG1 | 0x80;
@@ -303,10 +306,14 @@ interrupt 15 void TIM_ISR(void) {
 SCI (transmit section) interrupt service routine
 ***********************************************************************
 */
-
 interrupt 20 void SCI_ISR(void) {
 }
 
+/*
+***********************************************************************
+  LED_met: Controls led outputs for different metronome pulses
+***********************************************************************
+*/
 void LED_met(char led) {
 	switch(led) {
 		case 0:
@@ -323,6 +330,14 @@ void LED_met(char led) {
 	}
 }
 
+/*
+***********************************************************************
+  metcnt_correct: Calculates TIM interrupt counts that accumulate for
+	the length of a MAX_DEN length note given a desired bpm and beat
+	length in terms of MAX_DEN notes.  Constant value calculated from
+	control register settings.
+***********************************************************************
+*/
 void metcnt_correct(void) {
 	metcnt = 250000 / (bpm * tsbeat);
 	error  = 250000 % (bpm * tsbeat);
@@ -431,51 +446,63 @@ void pmsglcd(char str[]) {
 	}
 }
 
+/*
+*********************************************************************** 
+  print2digits: outputs a formatted 2 digit value to the LCD
+***********************************************************************
+*/
+void print2digits(unsigned char x) {
+	if(x >= 10) {
+		print_c(x / 10 + '0');
+	}
+	else {
+		print_c(' ');
+	}
+	print_c(x % 10 + '0');
+}
+
+/*
+*********************************************************************** 
+  print3digits: outputs a formatted 3 digit value to the LCD
+***********************************************************************
+*/
+void print3digits(unsigned char x) {
+	if(x >= 100) {
+		print_c(x / 100 + '0');
+	}
+	else {
+		print_c(' ');
+	}
+
+	if(x % 100 >= 10) {
+		print_c(x / 10 % 10 + '0');
+	}
+	else {
+		print_c(' ');
+	}
+
+	print_c(x % 10 + '0');
+}
+
+/*
+*********************************************************************** 
+  bpmdisp: updates LCD display with desired metronome settings
+***********************************************************************
+*/
 void bpmdisp(void) {
 	chgline(LINE1);
-	print_c(bpm / 100 + '0');
-	print_c(bpm / 10 % 10 + '0');
-	print_c(bpm % 10 + '0');
+	print3digits(bpm);
 	pmsglcd(" BPM");
 
 	chgline(LINE2);
 	pmsglcd("TS:");
-
-	if(tsnum >= 10) {
-		print_c(tsnum / 10 + '0');
-	}
-	else {
-		print_c(' ');
-	}
-	print_c(tsnum % 10 + '0');
-
+	print2digits(tsnum);
 	print_c('/');
-
-	if(tsden >= 10) {
-		print_c(tsden / 10 + '0');
-	}
-	else {
-		print_c(' ');
-	}
-	print_c(tsden % 10 + '0');
+	print2digits(tsden);
 
 	pmsglcd("B:");
-
-	if(MAX_DEN / tsbeat >= 10) {
-		print_c((MAX_DEN / tsbeat) / 10 + '0');
-	}
-	else {
-		print_c(' ');
-	}
-	print_c((MAX_DEN / tsbeat) % 10 + '0');
+	print2digits(MAX_DEN / tsbeat);
 
 	pmsglcd("S:");
-
-	if(MAX_DEN / tssub >= 10) {
-		print_c((MAX_DEN / tssub) / 10 + '0');
-	}
-	else {
-		print_c(' ');
-	}
-	print_c((MAX_DEN / tssub) % 10 + '0');
+	print2digits(MAX_DEN / tssub);
 }
