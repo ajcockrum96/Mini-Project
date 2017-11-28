@@ -1,0 +1,15 @@
+MODULE MiniProject
+
+TITLE 'LCDSR'
+
+DECLARATIONS
+MOSI pin 2;
+MCLK pin 1;
+!Q0..!Q7 pin 16..23 istype 'reg';
+
+EQUATIONS
+[Q1..Q7]    := [Q0..Q6];
+ Q0         := MOSI;
+[Q0..Q7].CLK = MCLK;
+
+END
