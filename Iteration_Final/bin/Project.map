@@ -562,9 +562,9 @@ MODULE:                 -- main.c.o --
      tssub                                      907       1       1       6   .data       
      curcnt                                     908       2       2       6   .bss        
      metcnt                                     90A       2       2       4   .bss        
-     pulsecnt                                   90C       2       2       4   .bss        
+     pulsecnt                                   90C       2       2       3   .bss        
      beatcnt                                    90E       2       2       3   .bss        
-     meascnt                                    910       2       2       2   .bss        
+     meascnt                                    910       2       2       3   .bss        
      subcnt                                     912       2       2       3   .bss        
      error                                      914       1       1       3   .bss        
      beat_accent                                915       1       1       4   .bss        
@@ -1328,9 +1328,9 @@ OBJECT LIST SORTED BY ADDRESS
      tssub                                      907       1       1       6   .data       
      curcnt                                     908       2       2       6   .bss        
      metcnt                                     90A       2       2       4   .bss        
-     pulsecnt                                   90C       2       2       4   .bss        
+     pulsecnt                                   90C       2       2       3   .bss        
      beatcnt                                    90E       2       2       3   .bss        
-     meascnt                                    910       2       2       2   .bss        
+     meascnt                                    910       2       2       3   .bss        
      subcnt                                     912       2       2       3   .bss        
      error                                      914       1       1       3   .bss        
      beat_accent                                915       1       1       4   .bss        
@@ -1470,7 +1470,7 @@ main                      USES initializations metcnt_correct bpmdisp _TIE
                                 STRING......2 measure_accent STRING.Meas.3 STRING......4 
                                 subdiv_accent STRING.Sub.5 STRING.....6 curcnt metcnt tsden 
                                 _BDIVMODU pulsecnt tsbeat beatcnt tssub subcnt LED_met 
-                                print2digits tsnum meascnt chgline pmsglcd 
+                                meascnt print2digits tsnum chgline pmsglcd 
 RTI_ISR                   USES _CRGFLG _PTAD pbstat prevpb start_stop set_tog 
                                 set_inc 
 TIM_ISR                   USES _TFLG1 curcnt _PTAD pbstat prevpb tempo_tap 

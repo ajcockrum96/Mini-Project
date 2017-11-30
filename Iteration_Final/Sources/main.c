@@ -76,7 +76,7 @@ void tssub_inc(void);
 #define UPDATE_TSDEN()				print2digits(tsden, LEFT_LCD);
 #define UPDATE_SUBDIV()				print_note(tssub, RIGHT_LCD);
 
-#define PULSE_DISP()				{chgline(LINE2, LEFT_LCD);	print2digits(pulsecnt + 1, LEFT_LCD);	HIDE_CURSOR(LEFT_LCD);}
+#define PULSE_DISP()				{chgline(LINE2, LEFT_LCD);	print2digits(meascnt + 1, LEFT_LCD);	HIDE_CURSOR(LEFT_LCD);}
 
 /* Variable declarations */
 unsigned int  curcnt   = 0;		// Number of TIM interrupts since the last MAX_DEN note
@@ -423,7 +423,7 @@ interrupt 15 void TIM_ISR(void) {
 		else {
 			tmstmp[tapindex++] = curcnt;
 			if(beats == 1) {
-				if (tapindex >= numbeats - 1) {
+				if (tapindex > numbeats - 1) {
 					tapseq = 0;
 					runstp = 1;
 					avg = 0;
@@ -434,7 +434,7 @@ interrupt 15 void TIM_ISR(void) {
 				}
 			}
 			else {
-				if (tapindex >= tsnum - 1) {
+				if (tapindex > tsnum - 1) {
 					tapseq = 0;
 					runstp = 1;
 					avg = 0;
