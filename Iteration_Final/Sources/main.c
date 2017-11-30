@@ -76,7 +76,7 @@ void tssub_inc(void);
 #define UPDATE_TSDEN()				print2digits(tsden, LEFT_LCD);
 #define UPDATE_SUBDIV()				print_note(tssub, RIGHT_LCD);
 
-#define PULSE_DISP()				{ chgline(LINE2, LEFT_LCD);	print2digits(pulsecnt, LEFT_LCD);	HIDE_CURSOR(LEFT_LCD); }
+#define PULSE_DISP()				{chgline(LINE2, LEFT_LCD);	print2digits(pulsecnt + 1, LEFT_LCD);	HIDE_CURSOR(LEFT_LCD);}
 
 /* Variable declarations */
 unsigned int  curcnt   = 0;		// Number of TIM interrupts since the last MAX_DEN note
@@ -673,7 +673,7 @@ void bpmdisp(void) {
 
 	// Output current subdivision length setting
 	chgline(LINE1, RIGHT_LCD);
-	pmsglcd("Subdivision:", RIGHT_LCD);
+	pmsglcd("Subdiv:", RIGHT_LCD);
 	print_note(tssub, RIGHT_LCD);
 
 	// Output current accent settings
