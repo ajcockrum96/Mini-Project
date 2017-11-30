@@ -1,5 +1,5 @@
 *** EVALUATION ***
-PROGRAM "W:\ECE36200\Mini-Project\Iteration_4\bin\Project.abs"
+PROGRAM "W:\ECE36200\Mini-Project\Iteration_Final\bin\Project.abs"
 
 *********************************************************************************************
 TARGET SECTION
@@ -25,7 +25,7 @@ _startupData is allocated at 0xC031 and uses 6 Bytes
 extern struct _tagStartup {
   unsigned nofZeroOut     1
   _Range   pZeroOut       0x900     72
-  _Copy    *toCopyDownBeg 0xC879
+  _Copy    *toCopyDownBeg 0xCA0D
 } _startupData;
 
 *********************************************************************************************
@@ -34,9 +34,9 @@ Section Name                    Size  Type     From       To       Segment
 ---------------------------------------------------------------------------------------------
 .init                             49     R     0xC000     0xC030   ROM_C000
 .startData                        10     R     0xC031     0xC03A   ROM_C000
-.rodata1                          46     R     0xC03B     0xC068   ROM_C000
-.text                           1699     R     0xC069     0xC70B   ROM_C000
-.copy                             14     R     0xC879     0xC886   ROM_C000
+.rodata1                          72     R     0xC03B     0xC082   ROM_C000
+.text                           2077     R     0xC083     0xC89F   ROM_C000
+.copy                             14     R     0xCA0D     0xCA1A   ROM_C000
 .stack                           256   R/W      0x800      0x8FF   RAM
 .data                              8   R/W      0x900      0x907   RAM
 .abs_section_8                     1   N/I        0x8        0x8   .absSeg0
@@ -265,11 +265,11 @@ Section Name                    Size  Type     From       To       Segment
 .abs_section_ffd6                  2     R     0xFFD6     0xFFD7   .absSeg223
 .bss                              32   R/W      0x908      0x927   RAM
 .common                           32   R/W      0x928      0x947   RAM
-RUNTIME                          365     R     0xC70C     0xC878   ROM_C000
+RUNTIME                          365     R     0xC8A0     0xCA0C   ROM_C000
 .vectSeg224_vect                   2     R     0xFFFE     0xFFFF   .vectSeg224
 
 Summary of section sizes per section type:
-READ_ONLY (R):         88F (dec:     2191)
+READ_ONLY (R):         A23 (dec:     2595)
 READ_WRITE (R/W):      148 (dec:      328)
 NO_INIT (N/I):         104 (dec:      260)
 
@@ -425,7 +425,7 @@ MODULE:                 -- mc9s12c32.c.o --
      _CANTXDSR7                                 17B       1       1       0   .abs_section_17b
      _CANTXDLR                                  17C       1       1       0   .abs_section_17c
      _CANTXTBPR                                 17D       1       1       0   .abs_section_17d
-     _PTT                                       240       1       1      22   .abs_section_240
+     _PTT                                       240       1       1      17   .abs_section_240
      _PTIT                                      241       1       1       0   .abs_section_241
      _DDRT                                      242       1       1       2   .abs_section_242
      _RDRT                                      243       1       1       0   .abs_section_243
@@ -509,59 +509,72 @@ MODULE:                 -- mc9s12c32.c.o --
      _CANTXTSR                                  17E       2       2       0   .abs_section_17e
 MODULE:                 -- main.c.o --
 - PROCEDURES:
-     initializations                           C069      A6     166       1   .text       
-     main                                      C10F     1BD     445      13   .text       
-     RTI_ISR                                   C2CC      49      73       1   .text       
-     TIM_ISR                                   C315     1E1     481       7   .text       
-     SCI_ISR                                   C4F6       1       1       1   .text       
-     LED_met                                   C4F7      34      52       4   .text       
-     metcnt_correct                            C52B      45      69       3   .text       
-     shiftout                                  C570      14      20       1   .text       
-     lcdwait                                   C584       9       9       3   .text       
-     send_byte                                 C58D      27      39       2   .text       
-     send_i                                    C5B4      17      23       7   .text       
-     chgline                                   C5CB      13      19       3   .text       
-     print_c                                   C5DE      17      23       6   .text       
-     pmsglcd                                   C5F5      1B      27       2   .text       
-     print2digits                              C610      29      41       2   .text       
-     print3digits                              C639      4F      79       1   .text       
-     bpmdisp                                   C688      84     132       6   .text       
+     initializations                           C083      A6     166       1   .text       
+     main                                      C129     1FF     511      17   .text       
+     RTI_ISR                                   C328      49      73       1   .text       
+     TIM_ISR                                   C371     1C5     453       4   .text       
+     SCI_ISR                                   C536       1       1       1   .text       
+     LED_met                                   C537      1E      30       4   .text       
+     metcnt_correct                            C555      45      69       3   .text       
+     shiftout                                  C59A      14      20       1   .text       
+     lcdwait                                   C5AE       9       9       3   .text       
+     send_byte                                 C5B7      27      39       2   .text       
+     send_i                                    C5DE      17      23       5   .text       
+     chgline                                   C5F5      13      19      11   .text       
+     print_c                                   C608      17      23       7   .text       
+     pmsglcd                                   C61F      1B      27       3   .text       
+     print2digits                              C63A      29      41       4   .text       
+     print3digits                              C663      4F      79       1   .text       
+     bpmdisp                                   C6B2      B6     182       3   .text       
+     print_note                                C768      73     115       4   .text       
+     tsnum_inc                                 C7DB      24      36       1   .text       
+     tsden_inc                                 C7FF      21      33       1   .text       
+     tsbeat_inc                                C820      5C      92       1   .text       
+     tssub_inc                                 C87C      24      36       1   .text       
 - VARIABLES:
-     STRING..BPM.1                             C03B       5       5       1   .rodata1    
-     STRING.TS..2                              C040       4       4       1   .rodata1    
-     STRING.B..3                               C044       3       3       1   .rodata1    
-     STRING.S..4                               C047       3       3       1   .rodata1    
-     STRING.TEST.SCREEN.2.5                    C04A       E      14       1   .rodata1    
-     STRING..................6                 C058      11      17       1   .rodata1    
-     bpm                                        900       1       1       5   .data       
+     STRING.Beat.1                             C03B       5       5       1   .rodata1    
+     STRING.....2                              C040       4       4       1   .rodata1    
+     STRING.Meas.3                             C044       5       5       1   .rodata1    
+     STRING.....4                              C049       4       4       1   .rodata1    
+     STRING.Sub.5                              C04D       4       4       1   .rodata1    
+     STRING.....6                              C051       4       4       1   .rodata1    
+     STRING.Subdivision..7                     C055       D      13       1   .rodata1    
+     STRING.Acc..8                             C062       5       5       1   .rodata1    
+     STRING.Beat.9                             C067       5       5       1   .rodata1    
+     STRING......10                            C06C       5       5       1   .rodata1    
+     STRING.Meas.11                            C071       5       5       1   .rodata1    
+     STRING......12                            C076       5       5       1   .rodata1    
+     STRING.Sub.13                             C07B       4       4       1   .rodata1    
+     STRING.....14                             C07F       4       4       1   .rodata1    
+     bpm                                        900       1       1       9   .data       
      prevpb                                     901       1       1       8   .data       
      pbstat                                     902       1       1       8   .data       
-     runstp                                     903       1       1       5   .data       
-     tsnum                                      904       1       1      11   .data       
-     tsden                                      905       1       1       9   .data       
+     runstp                                     903       1       1       6   .data       
+     tsnum                                      904       1       1      12   .data       
+     tsden                                      905       1       1      10   .data       
      tsbeat                                     906       1       1      13   .data       
-     tssub                                      907       1       1       5   .data       
-     curcnt                                     908       2       2       7   .bss        
+     tssub                                      907       1       1       6   .data       
+     curcnt                                     908       2       2       6   .bss        
      metcnt                                     90A       2       2       4   .bss        
-     pulsecnt                                   90C       2       2       3   .bss        
+     pulsecnt                                   90C       2       2       4   .bss        
      beatcnt                                    90E       2       2       3   .bss        
      meascnt                                    910       2       2       2   .bss        
      subcnt                                     912       2       2       3   .bss        
      error                                      914       1       1       3   .bss        
-     bacc                                       915       1       1       1   .bss        
-     macc                                       916       1       1       1   .bss        
-     sacc                                       917       1       1       1   .bss        
-     pb4                                        918       1       1       9   .bss        
-     pb5                                        919       1       1      11   .bss        
-     pb6                                        91A       1       1       4   .bss        
-     pb7                                        91B       1       1       3   .bss        
+     beat_accent                                915       1       1       4   .bss        
+     measure_accent                             916       1       1       4   .bss        
+     subdiv_accent                              917       1       1       4   .bss        
+     set_inc                                    918       1       1      15   .bss        
+     set_tog                                    919       1       1      17   .bss        
+     start_stop                                 91A       1       1       3   .bss        
+     tempo_tap                                  91B       1       1       3   .bss        
      tmpch                                      91C       1       1       1   .bss        
      i                                          91D       1       1       1   .bss        
      tapseq                                     91E       1       1       4   .bss        
-     tapindex                                   91F       1       1       7   .bss        
-     numbeats                                   920       1       1       4   .bss        
+     tapindex                                   91F       1       1       5   .bss        
+     numbeats                                   920       1       1       3   .bss        
      beats                                      921       1       1       4   .bss        
-     avg                                        922       2       2       5   .bss        
+     avg                                        922       2       2       6   .bss        
      ratio                                      924       2       2       4   .bss        
      iratio                                     926       2       2       4   .bss        
      _Vector_7                                 FFF0       2       2       0   .abs_section_fff0
@@ -578,15 +591,15 @@ MODULE:                 -- Start12.c.o --
      __SEG_END_SSTACK                           900       0       0       1               
 MODULE:                 -- rtshc12.c.o (ansisi.lib) --
 - PROCEDURES:
-     _BDIVMODU                                 C70C       A      10       9   RUNTIME     
-     _BDIVMODS                                 C716       B      11       2   RUNTIME     
-     _LSHL                                     C721      11      17       1   RUNTIME     
-     _lDivMod                                  C732      BE     190       4   RUNTIME     
-     _NEG_P                                    C7F0       F      15       7   RUNTIME     
-     _LDIVS                                    C7FF      35      53       3   RUNTIME     
-     _LMODS                                    C834      2A      42       1   RUNTIME     
-     _ILSEXT                                   C85E       7       7       2   RUNTIME     
-     _CASE_CHECKED_BYTE                        C865      14      20       1   RUNTIME     
+     _BDIVMODU                                 C8A0       A      10       8   RUNTIME     
+     _BDIVMODS                                 C8AA       B      11       2   RUNTIME     
+     _LSHL                                     C8B5      11      17       1   RUNTIME     
+     _lDivMod                                  C8C6      BE     190       4   RUNTIME     
+     _NEG_P                                    C984       F      15       7   RUNTIME     
+     _LDIVS                                    C993      35      53       3   RUNTIME     
+     _LMODS                                    C9C8      2A      42       1   RUNTIME     
+     _ILSEXT                                   C9F2       7       7       2   RUNTIME     
+     _CASE_CHECKED_BYTE                        C9F9      14      20       1   RUNTIME     
 - VARIABLES:
 
 *********************************************************************************************
@@ -594,7 +607,7 @@ MODULE STATISTIC
   Name                                      Data   Code  Const
 ---------------------------------------------------------------------------------------------
   mc9s12c32.c.o                              260      0      0
-  main.c.o                                    72   1699     52
+  main.c.o                                    72   2077     78
   Start12.c.o                                  0     49      0
   rtshc12.c.o (ansisi.lib)                     0    365      0
   other                                      256     12     14
@@ -605,17 +618,19 @@ SECTION USE IN OBJECT-ALLOCATION SECTION
 SECTION: ".text"
   initializations main RTI_ISR TIM_ISR SCI_ISR LED_met metcnt_correct shiftout 
   lcdwait send_byte send_i chgline print_c pmsglcd print2digits print3digits 
-  bpmdisp 
+  bpmdisp print_note tsnum_inc tsden_inc tsbeat_inc tssub_inc 
 SECTION: ".data"
   bpm prevpb pbstat runstp tsnum tsden tsbeat tssub 
 SECTION: ".bss"
-  curcnt metcnt pulsecnt beatcnt meascnt subcnt error bacc macc sacc pb4 pb5 
-  pb6 pb7 tmpch i tapseq tapindex numbeats beats avg ratio iratio 
+  curcnt metcnt pulsecnt beatcnt meascnt subcnt error beat_accent 
+  measure_accent subdiv_accent set_inc set_tog start_stop tempo_tap tmpch i 
+  tapseq tapindex numbeats beats avg ratio iratio 
 SECTION: ".init"
   Init _Startup 
 SECTION: ".rodata1"
-  STRING..BPM.1 STRING.TS..2 STRING.B..3 STRING.S..4 STRING.TEST.SCREEN.2.5 
-  STRING..................6 
+  STRING.Beat.1 STRING.....2 STRING.Meas.3 STRING.....4 STRING.Sub.5 
+  STRING.....6 STRING.Subdivision..7 STRING.Acc..8 STRING.Beat.9 STRING......10 
+  STRING.Meas.11 STRING......12 STRING.Sub.13 STRING.....14 
 SECTION: ".abs_section_8"
   _PORTE 
 SECTION: ".abs_section_9"
@@ -1252,7 +1267,7 @@ OBJECT LIST SORTED BY ADDRESS
      _CANTXDLR                                  17C       1       1       0   .abs_section_17c
      _CANTXTBPR                                 17D       1       1       0   .abs_section_17d
      _CANTXTSR                                  17E       2       2       0   .abs_section_17e
-     _PTT                                       240       1       1      22   .abs_section_240
+     _PTT                                       240       1       1      17   .abs_section_240
      _PTIT                                      241       1       1       0   .abs_section_241
      _DDRT                                      242       1       1       2   .abs_section_242
      _RDRT                                      243       1       1       0   .abs_section_243
@@ -1295,72 +1310,85 @@ OBJECT LIST SORTED BY ADDRESS
      _RDRAD                                     273       1       1       0   .abs_section_273
      _PERAD                                     274       1       1       0   .abs_section_274
      _PPSAD                                     275       1       1       0   .abs_section_275
-     bpm                                        900       1       1       5   .data       
+     bpm                                        900       1       1       9   .data       
      prevpb                                     901       1       1       8   .data       
      pbstat                                     902       1       1       8   .data       
-     runstp                                     903       1       1       5   .data       
-     tsnum                                      904       1       1      11   .data       
-     tsden                                      905       1       1       9   .data       
+     runstp                                     903       1       1       6   .data       
+     tsnum                                      904       1       1      12   .data       
+     tsden                                      905       1       1      10   .data       
      tsbeat                                     906       1       1      13   .data       
-     tssub                                      907       1       1       5   .data       
-     curcnt                                     908       2       2       7   .bss        
+     tssub                                      907       1       1       6   .data       
+     curcnt                                     908       2       2       6   .bss        
      metcnt                                     90A       2       2       4   .bss        
-     pulsecnt                                   90C       2       2       3   .bss        
+     pulsecnt                                   90C       2       2       4   .bss        
      beatcnt                                    90E       2       2       3   .bss        
      meascnt                                    910       2       2       2   .bss        
      subcnt                                     912       2       2       3   .bss        
      error                                      914       1       1       3   .bss        
-     bacc                                       915       1       1       1   .bss        
-     macc                                       916       1       1       1   .bss        
-     sacc                                       917       1       1       1   .bss        
-     pb4                                        918       1       1       9   .bss        
-     pb5                                        919       1       1      11   .bss        
-     pb6                                        91A       1       1       4   .bss        
-     pb7                                        91B       1       1       3   .bss        
+     beat_accent                                915       1       1       4   .bss        
+     measure_accent                             916       1       1       4   .bss        
+     subdiv_accent                              917       1       1       4   .bss        
+     set_inc                                    918       1       1      15   .bss        
+     set_tog                                    919       1       1      17   .bss        
+     start_stop                                 91A       1       1       3   .bss        
+     tempo_tap                                  91B       1       1       3   .bss        
      tmpch                                      91C       1       1       1   .bss        
      i                                          91D       1       1       1   .bss        
      tapseq                                     91E       1       1       4   .bss        
-     tapindex                                   91F       1       1       7   .bss        
-     numbeats                                   920       1       1       4   .bss        
+     tapindex                                   91F       1       1       5   .bss        
+     numbeats                                   920       1       1       3   .bss        
      beats                                      921       1       1       4   .bss        
-     avg                                        922       2       2       5   .bss        
+     avg                                        922       2       2       6   .bss        
      ratio                                      924       2       2       4   .bss        
      iratio                                     926       2       2       4   .bss        
      tmstmp                                     928      20      32       4   .common     
      Init                                      C000      29      41       1   .init       
      _Startup                                  C029       8       8       0   .init       
-     STRING..BPM.1                             C03B       5       5       1   .rodata1    
-     STRING.TS..2                              C040       4       4       1   .rodata1    
-     STRING.B..3                               C044       3       3       1   .rodata1    
-     STRING.S..4                               C047       3       3       1   .rodata1    
-     STRING.TEST.SCREEN.2.5                    C04A       E      14       1   .rodata1    
-     STRING..................6                 C058      11      17       1   .rodata1    
-     initializations                           C069      A6     166       1   .text       
-     main                                      C10F     1BD     445      13   .text       
-     RTI_ISR                                   C2CC      49      73       1   .text       
-     TIM_ISR                                   C315     1E1     481       7   .text       
-     SCI_ISR                                   C4F6       1       1       1   .text       
-     LED_met                                   C4F7      34      52       4   .text       
-     metcnt_correct                            C52B      45      69       3   .text       
-     shiftout                                  C570      14      20       1   .text       
-     lcdwait                                   C584       9       9       3   .text       
-     send_byte                                 C58D      27      39       2   .text       
-     send_i                                    C5B4      17      23       7   .text       
-     chgline                                   C5CB      13      19       3   .text       
-     print_c                                   C5DE      17      23       6   .text       
-     pmsglcd                                   C5F5      1B      27       2   .text       
-     print2digits                              C610      29      41       2   .text       
-     print3digits                              C639      4F      79       1   .text       
-     bpmdisp                                   C688      84     132       6   .text       
-     _BDIVMODU                                 C70C       A      10       9   RUNTIME     
-     _BDIVMODS                                 C716       B      11       2   RUNTIME     
-     _LSHL                                     C721      11      17       1   RUNTIME     
-     _lDivMod                                  C732      BE     190       4   RUNTIME     
-     _NEG_P                                    C7F0       F      15       7   RUNTIME     
-     _LDIVS                                    C7FF      35      53       3   RUNTIME     
-     _LMODS                                    C834      2A      42       1   RUNTIME     
-     _ILSEXT                                   C85E       7       7       2   RUNTIME     
-     _CASE_CHECKED_BYTE                        C865      14      20       1   RUNTIME     
+     STRING.Beat.1                             C03B       5       5       1   .rodata1    
+     STRING.....2                              C040       4       4       1   .rodata1    
+     STRING.Meas.3                             C044       5       5       1   .rodata1    
+     STRING.....4                              C049       4       4       1   .rodata1    
+     STRING.Sub.5                              C04D       4       4       1   .rodata1    
+     STRING.....6                              C051       4       4       1   .rodata1    
+     STRING.Subdivision..7                     C055       D      13       1   .rodata1    
+     STRING.Acc..8                             C062       5       5       1   .rodata1    
+     STRING.Beat.9                             C067       5       5       1   .rodata1    
+     STRING......10                            C06C       5       5       1   .rodata1    
+     STRING.Meas.11                            C071       5       5       1   .rodata1    
+     STRING......12                            C076       5       5       1   .rodata1    
+     STRING.Sub.13                             C07B       4       4       1   .rodata1    
+     STRING.....14                             C07F       4       4       1   .rodata1    
+     initializations                           C083      A6     166       1   .text       
+     main                                      C129     1FF     511      17   .text       
+     RTI_ISR                                   C328      49      73       1   .text       
+     TIM_ISR                                   C371     1C5     453       4   .text       
+     SCI_ISR                                   C536       1       1       1   .text       
+     LED_met                                   C537      1E      30       4   .text       
+     metcnt_correct                            C555      45      69       3   .text       
+     shiftout                                  C59A      14      20       1   .text       
+     lcdwait                                   C5AE       9       9       3   .text       
+     send_byte                                 C5B7      27      39       2   .text       
+     send_i                                    C5DE      17      23       5   .text       
+     chgline                                   C5F5      13      19      11   .text       
+     print_c                                   C608      17      23       7   .text       
+     pmsglcd                                   C61F      1B      27       3   .text       
+     print2digits                              C63A      29      41       4   .text       
+     print3digits                              C663      4F      79       1   .text       
+     bpmdisp                                   C6B2      B6     182       3   .text       
+     print_note                                C768      73     115       4   .text       
+     tsnum_inc                                 C7DB      24      36       1   .text       
+     tsden_inc                                 C7FF      21      33       1   .text       
+     tsbeat_inc                                C820      5C      92       1   .text       
+     tssub_inc                                 C87C      24      36       1   .text       
+     _BDIVMODU                                 C8A0       A      10       8   RUNTIME     
+     _BDIVMODS                                 C8AA       B      11       2   RUNTIME     
+     _LSHL                                     C8B5      11      17       1   RUNTIME     
+     _lDivMod                                  C8C6      BE     190       4   RUNTIME     
+     _NEG_P                                    C984       F      15       7   RUNTIME     
+     _LDIVS                                    C993      35      53       3   RUNTIME     
+     _LMODS                                    C9C8      2A      42       1   RUNTIME     
+     _ILSEXT                                   C9F2       7       7       2   RUNTIME     
+     _CASE_CHECKED_BYTE                        C9F9      14      20       1   RUNTIME     
      _Vector_20                                FFD6       2       2       0   .abs_section_ffd6
      _Vector_15                                FFE0       2       2       0   .abs_section_ffe0
      _Vector_7                                 FFF0       2       2       0   .abs_section_fff0
@@ -1376,42 +1404,40 @@ rtshc12.c.o (ansisi.lib):
   _CASE_SEARCH _CASE_SEARCH_BYTE _CASE_SEARCH_8 _CASE_SEARCH_8_BYTE _FCALL 
   _FPCMP 
 NOT USED VARIABLES
-main.c.o:
-  MAX_DEN MIN_DEN 
 rtshc12.c.o (ansisi.lib):
   _PowOfTwo_8 _PowOfTwo_16 _PowOfTwo_32 errno 
 
 *********************************************************************************************
 COPYDOWN SECTION
 ---------------------------------------------------------------------------------------------
-------- ROM-ADDRESS: 0xC879 ---- SIZE       4 ---
+------- ROM-ADDRESS: 0xCA0D ---- SIZE       4 ---
 Filling bytes inserted
  00080900
-------- ROM-ADDRESS: 0xC87D ---- RAM-ADDRESS: 0x900 ---- SIZE       1 ---
+------- ROM-ADDRESS: 0xCA11 ---- RAM-ADDRESS: 0x900 ---- SIZE       1 ---
 Name of initialized Object : bpm
  78
-------- ROM-ADDRESS: 0xC87E ---- RAM-ADDRESS: 0x901 ---- SIZE       1 ---
+------- ROM-ADDRESS: 0xCA12 ---- RAM-ADDRESS: 0x901 ---- SIZE       1 ---
 Name of initialized Object : prevpb
  F0
-------- ROM-ADDRESS: 0xC87F ---- RAM-ADDRESS: 0x902 ---- SIZE       1 ---
+------- ROM-ADDRESS: 0xCA13 ---- RAM-ADDRESS: 0x902 ---- SIZE       1 ---
 Name of initialized Object : pbstat
  F0
-------- ROM-ADDRESS: 0xC880 ---- RAM-ADDRESS: 0x903 ---- SIZE       1 ---
+------- ROM-ADDRESS: 0xCA14 ---- RAM-ADDRESS: 0x903 ---- SIZE       1 ---
 Name of initialized Object : runstp
  01
-------- ROM-ADDRESS: 0xC881 ---- RAM-ADDRESS: 0x904 ---- SIZE       1 ---
+------- ROM-ADDRESS: 0xCA15 ---- RAM-ADDRESS: 0x904 ---- SIZE       1 ---
 Name of initialized Object : tsnum
  04
-------- ROM-ADDRESS: 0xC882 ---- RAM-ADDRESS: 0x905 ---- SIZE       1 ---
+------- ROM-ADDRESS: 0xCA16 ---- RAM-ADDRESS: 0x905 ---- SIZE       1 ---
 Name of initialized Object : tsden
  04
-------- ROM-ADDRESS: 0xC883 ---- RAM-ADDRESS: 0x906 ---- SIZE       1 ---
+------- ROM-ADDRESS: 0xCA17 ---- RAM-ADDRESS: 0x906 ---- SIZE       1 ---
 Name of initialized Object : tsbeat
  04
-------- ROM-ADDRESS: 0xC884 ---- RAM-ADDRESS: 0x907 ---- SIZE       1 ---
+------- ROM-ADDRESS: 0xCA18 ---- RAM-ADDRESS: 0x907 ---- SIZE       1 ---
 Name of initialized Object : tssub
  04
-------- ROM-ADDRESS: 0xC885 ---- SIZE       2 ---
+------- ROM-ADDRESS: 0xCA19 ---- SIZE       2 ---
 Filling bytes inserted
  0000
 
@@ -1425,15 +1451,19 @@ initializations           USES _CLKSEL _PLLCTL _SYNR _REFDV _CRGFLG _COPCTL
                                 _DDRAD _ATDDIEN _TSCR1 _TSCR2 _TIOS _TC7 _TIE _SPICR1 
                                 _SPIBR _DDRM _DDRT _PTT send_i lcdwait 
 main                      USES initializations metcnt_correct bpmdisp _TIE 
-                                main pb6 runstp pb5 pb4 tsnum tsden tsbeat tssub 
-                                curcnt metcnt _BDIVMODU pulsecnt beatcnt subcnt 
-                                LED_met meascnt macc bacc sacc send_i 
-RTI_ISR                   USES _CRGFLG _PTAD pbstat prevpb pb6 pb5 pb4 
-TIM_ISR                   USES _TFLG1 curcnt _PTAD pbstat prevpb pb7 runstp 
-                                tapseq tmstmp tapindex tsden tsbeat iratio ratio 
-                                tsnum beats _BDIVMODU numbeats TIM_ISR avg pb6 _LSHL 
-                                _ILSEXT _LDIVS bpm metcnt_correct bpmdisp i error 
-LED_met                   USES _BDIVMODS _CASE_CHECKED_BYTE _PTT 
+                                main start_stop runstp set_tog set_inc tsbeat_inc 
+                                tsnum_inc tsden_inc tssub_inc beat_accent STRING.Beat.1 
+                                STRING.....2 measure_accent STRING.Meas.3 STRING.....4 
+                                subdiv_accent STRING.Sub.5 STRING.....6 curcnt metcnt tsden 
+                                _BDIVMODU pulsecnt tsbeat beatcnt tssub subcnt LED_met 
+                                print2digits tsnum meascnt chgline pmsglcd 
+RTI_ISR                   USES _CRGFLG _PTAD pbstat prevpb start_stop set_tog 
+                                set_inc 
+TIM_ISR                   USES _TFLG1 curcnt _PTAD pbstat prevpb tempo_tap 
+                                runstp tapseq tmstmp tapindex tsden tsbeat iratio 
+                                ratio tsnum beats _BDIVMODU numbeats avg TIM_ISR bpm 
+                                _LSHL _ILSEXT _LDIVS error metcnt_correct bpmdisp i 
+LED_met                   USES _BDIVMODS _PTT 
 metcnt_correct            USES tsbeat bpm _ILSEXT _LDIVS metcnt _LMODS error 
 shiftout                  USES _SPISR _SPIDR 
 send_byte                 USES shiftout _PTT lcdwait 
@@ -1443,10 +1473,17 @@ print_c                   USES _PTT send_byte
 pmsglcd                   USES print_c tmpch 
 print2digits              USES _BDIVMODU print_c 
 print3digits              USES _BDIVMODU print_c _BDIVMODS 
-bpmdisp                   USES chgline bpm print3digits STRING..BPM.1 
-                                STRING.TS..2 tsnum print_c tsden STRING.B..3 tsbeat 
-                                STRING.S..4 tssub STRING.TEST.SCREEN.2.5 
-                                STRING..................6 pmsglcd _BDIVMODU print2digits 
+bpmdisp                   USES chgline tsbeat print_note print_c bpm 
+                                print3digits tsnum bpmdisp tsden STRING.Subdivision..7 
+                                tssub STRING.Acc..8 beat_accent STRING.Beat.9 
+                                STRING......10 measure_accent STRING.Meas.11 STRING......12 
+                                subdiv_accent STRING.Sub.13 STRING.....14 pmsglcd 
+                                print2digits 
+print_note                USES _CASE_CHECKED_BYTE print_c 
+tsnum_inc                 USES tsnum print2digits chgline 
+tsden_inc                 USES tsden print2digits chgline 
+tsbeat_inc                USES tsbeat tsnum tsden print_note chgline 
+tssub_inc                 USES tssub tsbeat print_note chgline 
 _LDIVS                    USES _NEG_P _lDivMod 
 _LMODS                    USES _NEG_P _lDivMod 
 _Vector_20                USES SCI_ISR 
@@ -1494,39 +1531,69 @@ DEPENDENCY TREE
  |  |  |  | 
  |  |  |  +- send_i               (see above)
  |  |  |     
+ |  |  +- print_note          
+ |  |  |  | 
+ |  |  |  +- _CASE_CHECKED_BYTE  
+ |  |  |  |    
+ |  |  |  +- print_c             
+ |  |  |     | 
+ |  |  |     +- send_byte            (see above)
+ |  |  |        
+ |  |  +- print_c              (see above)
+ |  |  |  
  |  |  +- print3digits        
  |  |  |  | 
  |  |  |  +- _BDIVMODU           
  |  |  |  |    
- |  |  |  +- print_c             
- |  |  |  |  | 
- |  |  |  |  +- send_byte            (see above)
- |  |  |  |     
+ |  |  |  +- print_c              (see above)
+ |  |  |  |  
  |  |  |  +- _BDIVMODS           
  |  |  |       
- |  |  +- print_c              (see above)
- |  |  |  
  |  |  +- pmsglcd             
  |  |  |  | 
  |  |  |  +- print_c              (see above)
  |  |  |     
- |  |  +- _BDIVMODU            (see above)
- |  |  |  
  |  |  +- print2digits        
  |  |     | 
  |  |     +- _BDIVMODU            (see above)
  |  |     |  
  |  |     +- print_c              (see above)
  |  |        
+ |  +- tsbeat_inc          
+ |  |  | 
+ |  |  +- print_note           (see above)
+ |  |  |  
+ |  |  +- chgline              (see above)
+ |  |     
+ |  +- tsnum_inc           
+ |  |  | 
+ |  |  +- print2digits         (see above)
+ |  |  |  
+ |  |  +- chgline              (see above)
+ |  |     
+ |  +- tsden_inc           
+ |  |  | 
+ |  |  +- print2digits         (see above)
+ |  |  |  
+ |  |  +- chgline              (see above)
+ |  |     
+ |  +- tssub_inc           
+ |  |  | 
+ |  |  +- print_note           (see above)
+ |  |  |  
+ |  |  +- chgline              (see above)
+ |  |     
  |  +- _BDIVMODU            (see above)
  |  |  
  |  +- LED_met             
  |  |  | 
  |  |  +- _BDIVMODS            (see above)
- |  |  |  
- |  |  +- _CASE_CHECKED_BYTE  
- |  |       
- |  +- send_i               (see above)
+ |  |     
+ |  +- print2digits         (see above)
+ |  |  
+ |  +- chgline              (see above)
+ |  |  
+ |  +- pmsglcd              (see above)
  |     
  +- _Startup            
     | 
@@ -1564,6 +1631,6 @@ STATISTIC SECTION
 
 ExeFile:
 --------
-Number of blocks to be downloaded: 10
-Total size of all blocks to be downloaded: 2191
+Number of blocks to be downloaded: 9
+Total size of all blocks to be downloaded: 2595
 

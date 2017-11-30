@@ -16,6 +16,68 @@ void print2digits(unsigned char x, char LCD);
 void print3digits(unsigned char x, char LCD);
 void bpmdisp(void);
 
+void print_note(unsigned char note_len, char LCD);
+void tsnum_inc(void);
+void tsden_inc(void);
+void tsbeat_inc(void);
+void tssub_inc(void);
+
+/* Macro definitions */
+#define TIM_CONSTANT	250000
+#define MAX_DEN			16		// Maximum Subdivision allowed
+#define MIN_DEN			2		// Minimum Subdivision allowed
+#define BPM_INC			4		// Resolution of bpm settings
+
+/* Special LCD char definitions */
+#define DOTTED_NOTE_CHAR	0xAA
+#define EIGHTH_NOTE_CHAR	0x91
+#define HALF_NOTE_CHAR		'd'
+
+/* LCD INSTRUCTION CHARACTERS */
+#define LCDON 0x0F		// LCD initialization command
+#define LCDCLR 0x01		// LCD clear display command
+#define TWOLINE 0x38	// LCD 2-line enable command
+#define CURMOV 0xFE		// LCD cursor move instruction
+
+/* LCD LOCATION CHARACTERS */
+#define LEFT_LCD  0		// Left LCD select value
+#define RIGHT_LCD 1		// Right LCD select value
+#define LINE1 0x80		// LCD line 1 cursor position
+#define LINE2 0xC0		// LCD line 2 cursor position
+#define LINE1_END 0x8F	// LCD end of line 1 cursor position
+#define LINE2_END 0xCF	// LCD end of line 2 cursor position
+
+#define BEAT_SET			LINE1
+#define TSNUM_SET			(LINE1_END - 1)
+#define TSDEN_SET			(LINE2_END - 1)
+#define SUBDIV_SET			(LINE1 + 12)
+#define BEAT_ACCENT_SET		(LINE2 + 4)
+#define MEASURE_ACCENT_SET	(LINE2 + 8)
+#define SUBDIV_ACCENT_SET	(LINE2 + 12)
+
+/* Mask definitions */
+#define SET_INC_MASK_PTT	0x10
+#define SET_TOG_MASK_PTT	0x20
+#define START_STOP_MASK_PTT	0x40
+#define TEMPO_TAP_MASK_PTT	0x80
+
+/* Macro 'function' definitions */
+#define HIDE_CURSOR(LCD)			(chgline(LINE2_END + 1, (LCD)))
+#define CURSOR_TO_BEAT()			(chgline(BEAT_SET, LEFT_LCD))
+#define CURSOR_TO_TSNUM()			(chgline(TSNUM_SET, LEFT_LCD))
+#define CURSOR_TO_TSDEN()			(chgline(TSDEN_SET, LEFT_LCD))
+#define CURSOR_TO_SUBDIV()			(chgline(SUBDIV_SET, RIGHT_LCD))
+#define CURSOR_TO_BEAT_ACCENT()		(chgline(BEAT_ACCENT_SET, RIGHT_LCD))
+#define CURSOR_TO_MEASURE_ACCENT()	(chgline(MEASURE_ACCENT_SET, RIGHT_LCD))
+#define CURSOR_TO_SUBDIV_ACCENT()	(chgline(SUBDIV_ACCENT_SET, RIGHT_LCD))
+
+#define UPDATE_BEAT()				print_note(tsbeat, LEFT_LCD)
+#define UPDATE_TSNUM()				print2digits(tsnum, LEFT_LCD);
+#define UPDATE_TSDEN()				print2digits(tsden, LEFT_LCD);
+#define UPDATE_SUBDIV()				print_note(tssub, RIGHT_LCD);
+
+#define PULSE_DISP()				{ chgline(LINE2, LEFT_LCD);	print2digits(pulsecnt, LEFT_LCD);	HIDE_CURSOR(LEFT_LCD); }
+
 /* Variable declarations */
 unsigned int  curcnt   = 0;		// Number of TIM interrupts since the last MAX_DEN note
 unsigned int  metcnt   = 0;		// Number of TIM interrupts needed for each MAX_DEN note given control register settings, desired bpm, and desired beat length
@@ -27,47 +89,35 @@ unsigned int  subcnt   = 0;		// Number of MAX_DEN notes since the last subdivisi
 unsigned char bpm      = 120;	// Desired tempo in beats per minute
 unsigned char error    = 0;		// Rounding error: used to determine if metcnt should be rounded up or down
 
-unsigned char bacc     = 0;		// Beat accent setting
-unsigned char macc     = 0;		// Measure accent setting
-unsigned char sacc     = 0;		// Subdivision accent setting
+unsigned char beat_accent    = 0;		// Beat accent setting
+unsigned char measure_accent = 0;		// Measure accent setting
+unsigned char subdiv_accent  = 0;		// Subdivision accent setting
 
-unsigned char pb4    = 0;		// Pushbutton 4 flag: Setting 'Setter'
-unsigned char pb5    = 0;		// Pushbutton 5 flag: Setting 'Activator'
-unsigned char pb6    = 0;		// Pushbutton 6 flag: Start/Stop
-unsigned char pb7    = 0;		// Pushbutton 7 flag: Tap in Tempo
-unsigned char prevpb = 0xF0;	// Previous pushbutton statuses
-unsigned char pbstat = 0xF0;	// Current pushbutton statuses
+unsigned char set_inc    = 0;		// Setting Increment Flag
+unsigned char set_tog    = 0;		// Setting Toggle Flag
+unsigned char start_stop = 0;		// Start/Stop Flag
+unsigned char tempo_tap  = 0;		// Pushbutton 7 flag: Tap in Tempo
+unsigned char prevpb     = 0xF0;	// Previous pushbutton statuses
+unsigned char pbstat     = 0xF0;	// Current pushbutton statuses
 
 char tmpch = 0;
 char runstp = 1;
 char i = 0;
 
-unsigned char       tsnum   = 4;	// Time Signature Numerator
-unsigned char       tsden   = 4;	// Time Signature Denominator
-unsigned char       tsbeat  = 4;	// Length of "beat" in terms of MAX_DEN
-unsigned char       tssub   = 4;	// Length of subdivision in terms of MAX_DEN
-const unsigned char MAX_DEN = 16;	// Maximum Subdivision allowed
-const unsigned char MIN_DEN = 2;	// Minimum Subdivision allowed
+unsigned char tsnum   = 4;	// Time Signature Numerator
+unsigned char tsden   = 4;	// Time Signature Denominator
+unsigned char tsbeat  = 4;	// Length of "beat" in terms of MAX_DEN
+unsigned char tssub   = 4;	// Length of subdivision in terms of MAX_DEN
 
-char tapseq = 0;
+char tapseq   = 0;
 char tapindex = 0;
 char numbeats = 0;
 char beats    = 0;
-unsigned int tmstmp[16];
+unsigned int tmstmp[MAX_DEN];
 unsigned int avg    = 0;
 unsigned int ratio  = 0;
 unsigned int iratio = 0;
 
-/* Macro definitions */
-#define TIM_CONSTANT 250000;
-
-/* LCD INSTRUCTION CHARACTERS */
-#define LCDON 0x0F	// LCD initialization command
-#define LCDCLR 0x01	// LCD clear display command
-#define TWOLINE 0x38	// LCD 2-line enable command
-#define CURMOV 0xFE	// LCD cursor move instruction
-#define LINE1 0x80	// LCD line 1 cursor position
-#define LINE2 0xC0	// LCD line 2 cursor position
 
 /*
 ***********************************************************************
@@ -122,7 +172,7 @@ void  initializations(void) {
 	DDRT  = DDRT | 0xFC;	// Set PTT pins 3, 4, 5, 6, and 7 as outputs (LCDs)
 	DDRT  = DDRT | 0x03;	// Set PTT pins 0 and 1 as an outputs (LEDs)
 
-	/* Initialize the LCD 1 (L)
+	/* Initialize the LEFT_LCD
 		- pull LCDCLK high (idle)
 		- pull R/W' low (write state)
 		- turn on LCD (LCDON instruction)
@@ -132,12 +182,12 @@ void  initializations(void) {
 	*/
 	PTT_PTT7 = 1;
 	PTT_PTT6 = 0;
-	send_i(LCDON, 0);
-	send_i(TWOLINE, 0);
-	send_i(LCDCLR, 0);
+	send_i(LCDON, LEFT_LCD);
+	send_i(TWOLINE, LEFT_LCD);
+	send_i(LCDCLR, LEFT_LCD);
 	lcdwait();
 
-	/* Initialize the LCD 2 (R)
+	/* Initialize the RIGHT_LCD
 		- pull LCDCLK high (idle)
 		- pull R/W' low (write state)
 		- turn on LCD (LCDON instruction)
@@ -147,9 +197,9 @@ void  initializations(void) {
 	*/
 	PTT_PTT4 = 1;
 	PTT_PTT3 = 0;
-	send_i(LCDON, 1);
-	send_i(TWOLINE, 1);
-	send_i(LCDCLR, 1);
+	send_i(LCDON, RIGHT_LCD);
+	send_i(TWOLINE, RIGHT_LCD);
+	send_i(LCDCLR, RIGHT_LCD);
 	lcdwait();
 }
 
@@ -168,94 +218,107 @@ void main(void) {
 
 	for(;;) {
 		// If pushbutton 6 is pressed, start/stop metronome
-		if(pb6) {
-			pb6 = 0;
+		if(start_stop) {
+			start_stop = 0;
 			runstp = !runstp;
 		}
 		// If left pushbutton is pressed, enter setup mode
-			// Flash necessary setting choices on LCD
-			// Left pushbutton advances current setting
-			// Right pushbutton advances selection
-		if(pb5) {
-			pb5 = 0;
-			send_i(CURMOV, 0);
-			send_i(LINE2 + 4, 0);
-			// Time Signature Numerator Select
-			while(!pb5) {
-				if(pb4) {
-					pb4 = 0;
-					tsnum++;
-					if(tsnum > 32 || tsnum == 0) {
-						tsnum = 1;
-					}
-					// Update LCD
-					bpmdisp();
-					send_i(CURMOV, 0);
-					send_i(LINE2 + 4, 0);
-				}
-			}
-			pb5 = 0;
-			send_i(CURMOV, 0);
-			send_i(LINE2 + 7, 0);
-			// Time Signature Denominator Select
-			while(!pb5) {
-				if(pb4) {
-					pb4 = 0;
-					tsden *= 2;
-					if(tsden > MAX_DEN) {
-						tsden = MIN_DEN;
-					}
-					// Update LCD
-					bpmdisp();
-					send_i(CURMOV, 0);
-					send_i(LINE2 + 7, 0);
-				}
-			}
-			pb5 = 0;
-			send_i(CURMOV, 0);
-			send_i(LINE2 + 11, 0);
+		// Flash necessary setting choices on LCD
+		if(set_tog) {
 			// Beat Length Select
-			while(!pb5) {
-				if(pb4) {
-					pb4 = 0;
-					if(tsbeat < 4) {
-						tsbeat++;
+			set_tog = 0;
+			CURSOR_TO_BEAT();
+			while(!set_tog) {
+				if(set_inc) {
+					set_inc = 0;
+					tsbeat_inc();
+				}
+			}
+
+			// Time Signature Numerator Select
+			set_tog = 0;
+			CURSOR_TO_TSNUM();
+			while(!set_tog) {
+				if(set_inc) {
+					set_inc = 0;
+					tsnum_inc();
+				}
+			}
+
+			// Time Signature Denominator Select
+			set_tog = 0;
+			CURSOR_TO_TSDEN();
+			while(!set_tog) {
+				if(set_inc) {
+					set_inc = 0;
+					tsden_inc();
+				}
+			}
+			HIDE_CURSOR(LEFT_LCD);
+
+			// Beat Subdivision Select
+			set_tog = 0;
+			CURSOR_TO_SUBDIV();
+			while(!set_tog) {
+				if(set_inc) {
+					set_inc = 0;
+					tssub_inc();
+				}
+			}
+
+			// Beat Accent Select
+			set_tog = 0;
+			CURSOR_TO_BEAT_ACCENT();
+			while(!set_tog) {
+				if(set_inc) {
+					set_inc = 0;
+					beat_accent = !beat_accent;
+					if(beat_accent) {
+						pmsglcd("Beat", RIGHT_LCD);
 					}
 					else {
-						tsbeat += 2;
-						if(tsbeat > 8) {
-							tsbeat = 1;
-						}
+						pmsglcd("   ", RIGHT_LCD);
 					}
-					if(tsbeat > tsnum * MAX_DEN / tsden) {
-						tsbeat = 1;
-					}
-					// Update LCD
-					bpmdisp();
-					send_i(CURMOV, 0);
-					send_i(LINE2 + 11, 0);
+					CURSOR_TO_BEAT_ACCENT();
 				}
 			}
-			pb5 = 0;
-			send_i(CURMOV, 0);
-			send_i(LINE2 + 15, 0);
-			// Beat Subdivision Select
-			while(!pb5) {
-				if(pb4) {
-					pb4 = 0;
-					tssub *= 2;
-					if(tssub > tsbeat) {
-						tssub = 1;
+
+			// Measure Accent Select
+			set_tog = 0;
+			CURSOR_TO_MEASURE_ACCENT();
+			while(!set_tog) {
+				if(set_inc) {
+					set_inc = 0;
+					measure_accent = !measure_accent;
+					if(measure_accent) {
+						pmsglcd("Meas", RIGHT_LCD);
 					}
-					// Update LCD
-					bpmdisp();
-					send_i(CURMOV, 0);
-					send_i(LINE2 + 15, 0);
+					else {
+						pmsglcd("   ", RIGHT_LCD);
+					}
+					CURSOR_TO_MEASURE_ACCENT();
 				}
 			}
-			pb5 = 0;
-			send_i(CURMOV, 0);
-			send_i(LINE2 + 16, 0);
+
+			// Subdivision Accent Select
+			set_tog = 0;
+			CURSOR_TO_SUBDIV_ACCENT();
+			while(!set_tog) {
+				if(set_inc) {
+					set_inc = 0;
+					subdiv_accent = !subdiv_accent;
+					if(subdiv_accent) {
+						pmsglcd("Sub", RIGHT_LCD);
+					}
+					else {
+						pmsglcd("   ", RIGHT_LCD);
+					}
+					CURSOR_TO_SUBDIV_ACCENT();
+				}
+			}
+
+			set_tog = 0;
+			HIDE_CURSOR(RIGHT_LCD);
 			metcnt_correct();
 		}
 		// If metronome on and metcnt reached, count subdivisions
@@ -267,25 +330,24 @@ void main(void) {
 			// If metronome on and denominator beat reached, pulse normal sound
 			if(pulsecnt == 0) {
 				LED_met(0);
+				PULSE_DISP();
 				meascnt = (meascnt + 1) % tsnum;
 				// If metronome on and measure accent enabled, pulse at the front of each measure
-				if (meascnt == 0 && macc == 1) {
+				if (meascnt == 0 && measure_accent == 1) {
 					LED_met(2);
 				}
 			}
 			// If metronome on and beat accent enabled, pulse at the front of each bpm beat
-			if(beatcnt == 0 && bacc == 1) {
+			if(beatcnt == 0 && beat_accent == 1) {
 				LED_met(1);
 			}
 			// If metronome on and subdivision accent enabled, pulse at the front of each subdivision
-			if(subcnt == 0 && sacc == 1) {
+			if(subcnt == 0 && subdiv_accent == 1) {
 				LED_met(3);
 			}
 		}
 	} /* loop forever */
 }	/* do not leave main */
-
-
 
 /*
 ***********************************************************************
@@ -296,21 +358,21 @@ RTI interrupt service routine: RTI_ISR
 interrupt 7 void RTI_ISR(void) {
 	// clear RTI interrupt flagt
 	CRGFLG = CRGFLG | 0x80;
-	pbstat = (PTAD & 0xF0);
+	pbstat = (PTAD & (START_STOP_MASK_PTT | SET_TOG_MASK_PTT | SET_INC_MASK_PTT));
 
 	// Check PAD6 (Start Stop)
-	if ((prevpb & 0x40) && !(pbstat & 0x40)) {
-		pb6 = 1;
+	if ((prevpb & START_STOP_MASK_PTT) && !(pbstat & START_STOP_MASK_PTT)) {
+		start_stop = 1;
 	}
 	// Check PAD5 (Setting 'Activator')
-	if ((prevpb & 0x20) && !(pbstat & 0x20)) {
-		pb5 = 1;
+	if ((prevpb & SET_TOG_MASK_PTT) && !(pbstat & SET_TOG_MASK_PTT)) {
+		set_tog = 1;
 	}
 	// Check PAD4 (Setting 'Setter')
-	if ((prevpb & 0x10) && !(pbstat & 0x10)) {
-		pb4 = 1;
+	if ((prevpb & SET_INC_MASK_PTT) && !(pbstat & SET_INC_MASK_PTT)) {
+		set_inc = 1;
 	}
-	prevpb = (pbstat & 0x70) | (prevpb & 0x80);
+	prevpb = (pbstat & ~(TEMPO_TAP_MASK_PTT)) | (prevpb & TEMPO_TAP_MASK_PTT);
 }
 
 /*
@@ -326,15 +388,15 @@ interrupt 15 void TIM_ISR(void) {
 	++curcnt;
 
 	// Check PAD7 (Tap in Tempo)
-	pbstat = (PTAD & 0xF0);
-	if ((prevpb & 0x80) && !(pbstat & 0x80)) {
-		pb7 = 1;
+	pbstat = (PTAD & TEMPO_TAP_MASK_PTT);
+	if ((prevpb & TEMPO_TAP_MASK_PTT) && !(pbstat & TEMPO_TAP_MASK_PTT)) {
+		tempo_tap = 1;
 	}
-	prevpb = (pbstat & 0x80) | (prevpb & 0x70);
+	prevpb = (pbstat & TEMPO_TAP_MASK_PTT) | (prevpb & ~(TEMPO_TAP_MASK_PTT));
 
-	if(pb7) {
+	if(tempo_tap) {
 		runstp = 0;
-		pb7 = 0;
+		tempo_tap = 0;
 		if (!tapseq) {
 			curcnt = 0;
 			tmstmp[0] = curcnt;
@@ -359,54 +421,38 @@ interrupt 15 void TIM_ISR(void) {
 			}
 		}
 		else {
+			tmstmp[tapindex++] = curcnt;
 			if(beats == 1) {
-				if (tapindex < numbeats - 1) {
-					tmstmp[tapindex++] = curcnt;
-				}
-				else {
-					tmstmp[tapindex++] = curcnt;
+				if (tapindex >= numbeats - 1) {
 					tapseq = 0;
 					runstp = 1;
 					avg = 0;
 					for (i = numbeats - 1; i > 0; --i) {
 						avg += (tmstmp[i] - tmstmp[i - 1]) / (numbeats - 1);
 					}
-					// FIXME: Currently working here!!!
-					bpm = 250000 / avg;	// I think this is okay?  Plug into metcnt equation to check
-
-					error = bpm % 4;	// Determine error from multiple of 4
-					bpm = bpm / 4 * 4;	// Truncate to multiple of 4
-					if(error >= 2) {	// Round to nearest multiple of 4
-						bpm += 4;
-					}
-					metcnt_correct();
-					bpmdisp();
+					bpm = TIM_CONSTANT / avg;
 				}
 			}
 			else {
-				if (tapindex < tsnum - 1) {
-					tmstmp[tapindex++] = curcnt;
-				}
-				else {
-					tmstmp[tapindex++] = curcnt;
+				if (tapindex >= tsnum - 1) {
 					tapseq = 0;
-					pb6 = 1;
+					runstp = 1;
 					avg = 0;
 					for (i = tsnum - 1; i > 0; --i) {
 						avg += (tmstmp[i] - tmstmp[i - 1]) / (tsnum - 1);
 					}
 					// FIXME: Currently working here!!!
-					bpm = 250000 / avg * MAX_DEN / (tsbeat * tsden);	// Modify for not using beats as tapping
-
-					error = bpm % 4;	// Determine error from multiple of 4
-					bpm = bpm / 4 * 4;	// Truncate to multiple of 4
-					if(error >= 2) {	// Round to nearest multiple of 4
-						bpm += 4;
-					}
-					metcnt_correct();
-					bpmdisp();
+					bpm = TIM_CONSTANT / avg * MAX_DEN / (tsbeat * tsden);	// Modify for not using beats as tapping
 				}
 			}
+
+			error = bpm % BPM_INC;	// Determine error from multiple of BPM_INC
+			bpm = bpm / BPM_INC * BPM_INC;	// Truncate to multiple of BPM_INC
+			if(error >= BPM_INC / 2) {	// Round to nearest multiple of BPM_INC
+				bpm += BPM_INC;
+			}
+			metcnt_correct();
+			bpmdisp();
 		}
 	}
 }
@@ -431,12 +477,6 @@ void LED_met(char led) {
 			break;
 		case 1:
 			PTT_PTT1 = !PTT_PTT1;
-			break;
-		case 2:
-			PTT_PTT2 = !PTT_PTT2;
-			break;
-		case 3:
-			PTT_PTT3 = !PTT_PTT3;
 	}
 }
 
@@ -449,8 +489,8 @@ void LED_met(char led) {
 ***********************************************************************
 */
 void metcnt_correct(void) {
-	metcnt = 250000 / (bpm * tsbeat);
-	error  = 250000 % (bpm * tsbeat);
+	metcnt = TIM_CONSTANT / (bpm * tsbeat);
+	error  = TIM_CONSTANT % (bpm * tsbeat);
 	if(error >= bpm / 2) {
 		++metcnt;
 	}
@@ -565,8 +605,7 @@ void print_c(char x, char LCD) {
 */
 void pmsglcd(char str[], char LCD) {
 	tmpch = str[0];
-	while (tmpch != 0)
-	{
+	while (tmpch != 0) {
 		print_c(tmpch, LCD);
 		str++;
 		tmpch = str[0];
@@ -617,23 +656,135 @@ void print3digits(unsigned char x, char LCD) {
 ***********************************************************************
 */
 void bpmdisp(void) {
-	chgline(LINE1, 0);
-	print3digits(bpm, 0);
-	pmsglcd(" BPM", 0);
+	// Output current tempo in terms of the defined beat length
+	chgline(LINE1, LEFT_LCD);
+	print_note(tsbeat, LEFT_LCD);
+	print_c('=', LEFT_LCD);
+	print3digits(bpm, LEFT_LCD);
 
-	chgline(LINE2, 0);
-	pmsglcd("TS:", 0);
-	print2digits(tsnum, 0);
-	print_c('/', 0);
-	print2digits(tsden, 0);
+	// Output current time signature setting
+	chgline(TSNUM_SET, LEFT_LCD);
+	print2digits(tsnum, LEFT_LCD);
+	chgline(TSDEN_SET, LEFT_LCD);
+	print2digits(tsden, LEFT_LCD);
 
-	pmsglcd("B:", 0);
-	print2digits(MAX_DEN / tsbeat, 0);
+	// Hide LEFT_LCD Cursor
+	HIDE_CURSOR(LEFT_LCD);
 
-	pmsglcd("S:", 0);
-	print2digits(MAX_DEN / tssub, 0);
+	// Output current subdivision length setting
+	chgline(LINE1, RIGHT_LCD);
+	pmsglcd("Subdivision:", RIGHT_LCD);
+	print_note(tssub, RIGHT_LCD);
 
-	chgline(LINE1, 1);
-	pmsglcd("TEST SCREEN 2", 1);
-	pmsglcd("                ", 1);
+	// Output current accent settings
+	chgline(LINE2, RIGHT_LCD);
+	pmsglcd("Acc:", RIGHT_LCD);
+	if(beat_accent) {
+		pmsglcd("Beat", RIGHT_LCD);
+	}
+	else {
+		pmsglcd("    ", RIGHT_LCD);
+	}
+	if(measure_accent) {
+		pmsglcd("Meas", RIGHT_LCD);
+	}
+	else {
+		pmsglcd("    ", RIGHT_LCD);
+	}
+	if(subdiv_accent) {
+		pmsglcd("Sub", RIGHT_LCD);
+	}
+	else {
+		pmsglcd("   ", RIGHT_LCD);
+	}
+
+	// Hide RIGHT_LCD Cursor
+	HIDE_CURSOR(RIGHT_LCD);
+}
+
+void print_note(unsigned char note_len, char LCD) {
+	if(MAX_DEN == 16) {
+		switch(note_len) {
+			case 1:
+				print_c(EIGHTH_NOTE_CHAR, LCD);
+				print_c('/', LCD);
+				print_c('2', LCD);
+				break;
+			case 2:
+				print_c(' ', LCD);
+				print_c(' ', LCD);
+				print_c(EIGHTH_NOTE_CHAR, LCD);
+				break;
+			case 3:
+				print_c(' ', LCD);
+				print_c(EIGHTH_NOTE_CHAR, LCD);
+				print_c(DOTTED_NOTE_CHAR, LCD);
+				break;
+			case 4:
+				print_c(' ', LCD);
+				print_c(EIGHTH_NOTE_CHAR, LCD);
+				print_c(EIGHTH_NOTE_CHAR, LCD);
+				break;
+			case 6:
+				print_c(EIGHTH_NOTE_CHAR, LCD);
+				print_c(EIGHTH_NOTE_CHAR, LCD);
+				print_c(EIGHTH_NOTE_CHAR, LCD);
+				break;
+			case 8:
+				print_c(' ', LCD);
+				print_c(' ', LCD);
+				print_c(HALF_NOTE_CHAR, LCD);
+		}
+	}
+}
+
+void tsnum_inc(void) {
+	tsnum++;
+	if(tsnum > MAX_DEN || tsnum == 0) {
+		tsnum = 1;
+	}
+	UPDATE_TSNUM();
+	CURSOR_TO_TSNUM();
+}
+
+void tsden_inc(void) {
+	tsden *= 2;
+	if(tsden > MAX_DEN) {
+		tsden = MIN_DEN;
+	}
+	UPDATE_TSDEN();
+	CURSOR_TO_TSDEN();
+}
+
+void tsbeat_inc(void) {
+	switch(tsbeat) {
+		case 1:
+		case 2:
+		case 3:
+			tsbeat += 1;
+			break;
+		case 4:
+		case 6:
+			tsbeat += 2;
+			break;
+		case 8:
+			tsbeat = 1;
+	}
+
+	if(tsbeat > tsnum * MAX_DEN / tsden) {
+		tsbeat = 1;
+	}
+
+	UPDATE_BEAT();
+	CURSOR_TO_BEAT();
+}
+
+void tssub_inc(void) {
+	tssub *= 2;
+	if(tssub > tsbeat) {
+		tssub = 1;
+	}
+
+	UPDATE_SUBDIV();
+	CURSOR_TO_SUBDIV();
 }
