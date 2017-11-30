@@ -277,7 +277,7 @@ void main(void) {
 						pmsglcd("Beat", RIGHT_LCD);
 					}
 					else {
-						pmsglcd("   ", RIGHT_LCD);
+						pmsglcd("    ", RIGHT_LCD);
 					}
 					CURSOR_TO_BEAT_ACCENT();
 				}
@@ -294,7 +294,7 @@ void main(void) {
 						pmsglcd("Meas", RIGHT_LCD);
 					}
 					else {
-						pmsglcd("   ", RIGHT_LCD);
+						pmsglcd("    ", RIGHT_LCD);
 					}
 					CURSOR_TO_MEASURE_ACCENT();
 				}
@@ -706,34 +706,22 @@ void print_note(unsigned char note_len, char LCD) {
 	if(MAX_DEN == 16) {
 		switch(note_len) {
 			case 1:
-				print_c(EIGHTH_NOTE_CHAR, LCD);
-				print_c('/', LCD);
-				print_c('2', LCD);
+				pmsglcd("  16th", LCD);
 				break;
 			case 2:
-				print_c(' ', LCD);
-				print_c(' ', LCD);
-				print_c(EIGHTH_NOTE_CHAR, LCD);
+				pmsglcd("   8th", LCD);
 				break;
 			case 3:
-				print_c(' ', LCD);
-				print_c(EIGHTH_NOTE_CHAR, LCD);
-				print_c(DOTTED_NOTE_CHAR, LCD);
+				pmsglcd("  D8th", LCD);
 				break;
 			case 4:
-				print_c(' ', LCD);
-				print_c(EIGHTH_NOTE_CHAR, LCD);
-				print_c(EIGHTH_NOTE_CHAR, LCD);
+				pmsglcd(" Quart", LCD);
 				break;
 			case 6:
-				print_c(EIGHTH_NOTE_CHAR, LCD);
-				print_c(EIGHTH_NOTE_CHAR, LCD);
-				print_c(EIGHTH_NOTE_CHAR, LCD);
+				pmsglcd("DQuart", LCD);
 				break;
 			case 8:
-				print_c(' ', LCD);
-				print_c(' ', LCD);
-				print_c(HALF_NOTE_CHAR, LCD);
+				pmsglcd("  Half", LCD);
 		}
 	}
 }
