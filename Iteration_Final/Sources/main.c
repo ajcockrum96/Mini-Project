@@ -27,6 +27,7 @@ void tssub_inc(void);
 #define MAX_DEN			16		// Maximum Subdivision allowed
 #define MIN_DEN			2		// Minimum Subdivision allowed
 #define BPM_INC			4		// Resolution of bpm settings
+#define BUF_SIZE		100		// PWM Output Function Buffer Size
 
 /* Special LCD char definitions */
 #define DOTTED_NOTE_CHAR	0xAA
@@ -50,7 +51,7 @@ void tssub_inc(void);
 #define BEAT_SET			LINE1
 #define TSNUM_SET			(LINE1_END - 1)
 #define TSDEN_SET			(LINE2_END - 1)
-#define SUBDIV_SET			(LINE1 + 12)
+#define SUBDIV_SET			(LINE1 + 7)
 #define BEAT_ACCENT_SET		(LINE2 + 4)
 #define MEASURE_ACCENT_SET	(LINE2 + 8)
 #define SUBDIV_ACCENT_SET	(LINE2 + 12)
@@ -83,7 +84,7 @@ unsigned int  curcnt   = 0;		// Number of TIM interrupts since the last MAX_DEN 
 unsigned int  metcnt   = 0;		// Number of TIM interrupts needed for each MAX_DEN note given control register settings, desired bpm, and desired beat length
 unsigned int  pulsecnt = 0;		// Number of MAX_DEN notes since the last normal pulse
 unsigned int  beatcnt  = 0;		// Number of MAX_DEN notes since the last beat pulse
-unsigned int  meascnt  = 0;		// Number of MAX_DEN notes since the last measure pulse
+unsigned int  meascnt  = 0;		// Number of pulse notes since the last measure pulse
 unsigned int  subcnt   = 0;		// Number of MAX_DEN notes since the last subdivision pulse
 
 unsigned char bpm      = 120;	// Desired tempo in beats per minute
@@ -118,6 +119,15 @@ unsigned int avg    = 0;
 unsigned int ratio  = 0;
 unsigned int iratio = 0;
 
+unsigned int buffer[BUF_SIZE];
+unsigned int buf_cnt = 0;
+unsigned char pitch_val = 0;
+unsigned char pitch_on  = 0;
+
+unsigned char send_pulse  = 0;
+unsigned char send_beat   = 0;
+unsigned char send_meas   = 0;
+unsigned char send_subdiv = 0;
 
 /*
 ***********************************************************************
@@ -146,7 +156,7 @@ void  initializations(void) {
 
 	/* Initialize RTI for a 2.048 ms interrupt rate */
 	CRGINT  = CRGINT | 0x80;
-	RTICTL  = 0x1F;
+	RTICTL  = 0x5F;
 	DDRAD   = DDRAD & 0x0F;	// Set PAD pins 4, 5, 6, and 7 as inputs
 	ATDDIEN = ATDDIEN | 0xF0;
 
@@ -162,6 +172,15 @@ void  initializations(void) {
 	TIOS  = TIOS  | 0x80;	// Set Channel 7 for output compare
 	TC7   = 360;			// Set Channel 7 to count to 360
 	TIE   = TIE & 0x7F;     // Disable Ch 7 Interrupts
+
+	/* Initialize PWM */
+	PWME    = 0x02;		// Enable PWM Channel 1
+	PWMPOL  = 0x02;		// Set Channel 1 as active high
+	PWMCLK  = 0x00;		// Select CLK A for Channel 1
+	PWMPRCLK = 0x01;	// Prescale CLK A by 2 (12 MHz)
+	PWMDTY1 = 0;		// Initially Zero the Duty Cycle
+	PWMPER1 = 200;		// Set OSF of Channel 1 to 60 kHz
+	MODRR   = 0x02;		// Route PWM1 to PT1
 
 	/* Initialize SPI for baud rate of 6 Mbs, MSB first */
 	SPICR1 = 0x50;
@@ -201,6 +220,62 @@ void  initializations(void) {
 	send_i(TWOLINE, RIGHT_LCD);
 	send_i(LCDCLR, RIGHT_LCD);
 	lcdwait();
+
+	/* Fill PWM Function output buffer */
+	// 100 * sin(2 * pi * x / BUF_SIZE) + 100
+	// Generates a 5 Vpp sin wave output
+	buffer[0]  = buffer[50] = 100;
+	buffer[1]  = buffer[49] = 106;
+	buffer[2]  = buffer[48] = 113;
+	buffer[3]  = buffer[47] = 119;
+	buffer[4]  = buffer[46] = 125;
+	buffer[5]  = buffer[45] = 131;
+	buffer[6]  = buffer[44] = 137;
+	buffer[7]  = buffer[43] = 143;
+	buffer[8]  = buffer[42] = 148;
+	buffer[9]  = buffer[41] = 154;
+	buffer[10] = buffer[40] = 159;
+	buffer[11] = buffer[39] = 164;
+	buffer[12] = buffer[38] = 168;
+	buffer[13] = buffer[37] = 173;
+	buffer[14] = buffer[36] = 177;
+	buffer[15] = buffer[35] = 181;
+	buffer[16] = buffer[34] = 184;
+	buffer[17] = buffer[33] = 188;
+	buffer[18] = buffer[32] = 190;
+	buffer[19] = buffer[31] = 193;
+	buffer[20] = buffer[30] = 195;
+	buffer[21] = buffer[29] = 197;
+	buffer[22] = buffer[28] = 198;
+	buffer[23] = buffer[27] = 199;
+	buffer[24] = buffer[26] = 200;
+	buffer[25] = 200;
+
+	buffer[51] = buffer[99] = 94;
+	buffer[52] = buffer[98] = 87;
+	buffer[53] = buffer[97] = 81;
+	buffer[54] = buffer[96] = 75;
+	buffer[55] = buffer[95] = 69;
+	buffer[56] = buffer[94] = 63;
+	buffer[57] = buffer[93] = 57;
+	buffer[58] = buffer[92] = 52;
+	buffer[59] = buffer[91] = 46;
+	buffer[60] = buffer[90] = 41;
+	buffer[61] = buffer[89] = 36;
+	buffer[62] = buffer[88] = 32;
+	buffer[63] = buffer[87] = 27;
+	buffer[64] = buffer[86] = 23;
+	buffer[65] = buffer[85] = 19;
+	buffer[66] = buffer[84] = 16;
+	buffer[67] = buffer[83] = 12;
+	buffer[68] = buffer[82] = 10;
+	buffer[69] = buffer[81] =  7;
+	buffer[70] = buffer[80] =  5;
+	buffer[71] = buffer[79] =  3;
+	buffer[72] = buffer[78] =  2;
+	buffer[73] = buffer[77] =  1;
+	buffer[74] = buffer[76] =  0;
+	buffer[75] = 0;
 }
 
 /*
@@ -320,6 +395,10 @@ void main(void) {
 			set_tog = 0;
 			HIDE_CURSOR(RIGHT_LCD);
 			metcnt_correct();
+			pulsecnt = 0;
+			beatcnt = 0;
+			subcnt = 0;
+			meascnt = 0;
 		}
 		// If metronome on and metcnt reached, count subdivisions
 		if(curcnt >= metcnt && runstp) {
@@ -329,21 +408,43 @@ void main(void) {
 			subcnt   = (subcnt + 1) % tssub;
 			// If metronome on and denominator beat reached, pulse normal sound
 			if(pulsecnt == 0) {
-				LED_met(0);
-				PULSE_DISP();
+				send_pulse = 1;
 				meascnt = (meascnt + 1) % tsnum;
+				PULSE_DISP();
 				// If metronome on and measure accent enabled, pulse at the front of each measure
 				if (meascnt == 0 && measure_accent == 1) {
-					LED_met(2);
+					send_meas = 1;
 				}
 			}
 			// If metronome on and beat accent enabled, pulse at the front of each bpm beat
 			if(beatcnt == 0 && beat_accent == 1) {
-				LED_met(1);
+				send_beat = 1;
 			}
 			// If metronome on and subdivision accent enabled, pulse at the front of each subdivision
 			if(subcnt == 0 && subdiv_accent == 1) {
+				send_subdiv = 1;
+			}
+			if(send_meas) {
 				LED_met(3);
+				send_meas = 0;
+				send_beat = 0;
+				send_pulse = 0;
+				send_subdiv = 0;
+			}
+			else if(send_beat) {
+				LED_met(2);
+				send_beat = 0;
+				send_pulse = 0;
+				send_subdiv = 0;
+			}
+			else if(send_pulse) {
+				LED_met(1);
+				send_pulse = 0;
+				send_subdiv = 0;
+			}
+			else if(send_subdiv) {
+				LED_met(0);
+				send_subdiv = 0;
 			}
 		}
 	} /* loop forever */
@@ -358,12 +459,8 @@ RTI interrupt service routine: RTI_ISR
 interrupt 7 void RTI_ISR(void) {
 	// clear RTI interrupt flagt
 	CRGFLG = CRGFLG | 0x80;
-	pbstat = (PTAD & (START_STOP_MASK_PTT | SET_TOG_MASK_PTT | SET_INC_MASK_PTT));
+	pbstat = (PTAD & (SET_TOG_MASK_PTT | SET_INC_MASK_PTT));
 
-	// Check PAD6 (Start Stop)
-	if ((prevpb & START_STOP_MASK_PTT) && !(pbstat & START_STOP_MASK_PTT)) {
-		start_stop = 1;
-	}
 	// Check PAD5 (Setting 'Activator')
 	if ((prevpb & SET_TOG_MASK_PTT) && !(pbstat & SET_TOG_MASK_PTT)) {
 		set_tog = 1;
@@ -386,6 +483,10 @@ interrupt 15 void TIM_ISR(void) {
 	// clear TIM CH 7 interrupt flag
 	TFLG1 = TFLG1 | 0x80;
 	++curcnt;
+	if(pitch_on) {
+		buf_cnt = (buf_cnt + 10 * (pitch_val + 1)) % BUF_SIZE;
+		PWMDTY1 = buffer[buf_cnt];
+	}
 
 	// Check PAD7 (Tap in Tempo)
 	pbstat = (PTAD & TEMPO_TAP_MASK_PTT);
@@ -471,13 +572,12 @@ interrupt 20 void SCI_ISR(void) {
 ***********************************************************************
 */
 void LED_met(char led) {
-	switch(led % 2) {
-		case 0:
-			PTT_PTT0 = !PTT_PTT0;
-			break;
-		case 1:
-			PTT_PTT1 = !PTT_PTT1;
+	pitch_val = led;
+	pitch_on  = 1;
+	for(i = 0; i < 10; ++i) {
+		lcdwait();
 	}
+	pitch_on = 0;
 }
 
 /*
