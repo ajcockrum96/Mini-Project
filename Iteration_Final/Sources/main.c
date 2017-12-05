@@ -13,7 +13,7 @@ void chgline(char x, char LCD);
 void print_c(char x, char LCD);
 void pmsglcd(char str[], char LCD);
 void print2digits(unsigned char x, char LCD);
-void print3digits(unsigned char x, char LCD);
+void print3digits(unsigned int x, char LCD);
 void bpmdisp(void);
 
 void print_note(unsigned char note_len, char LCD);
@@ -24,6 +24,7 @@ void tssub_inc(void);
 
 /* Macro definitions */
 #define TIM_CONSTANT	250000
+#define MAX_BPM			480
 #define MAX_DEN			16		// Maximum Subdivision allowed
 #define MIN_DEN			2		// Minimum Subdivision allowed
 #define BPM_INC			4		// Resolution of bpm settings
@@ -49,6 +50,7 @@ void tssub_inc(void);
 #define LINE2_END 0xCF	// LCD end of line 2 cursor position
 
 #define BEAT_SET			LINE1
+#define BPM_SET				(LINE1 + 7)
 #define TSNUM_SET			(LINE1_END - 1)
 #define TSDEN_SET			(LINE2_END - 1)
 #define SUBDIV_SET			(LINE1 + 7)
@@ -59,12 +61,12 @@ void tssub_inc(void);
 /* Mask definitions */
 #define SET_INC_MASK_PTT	0x10
 #define SET_TOG_MASK_PTT	0x20
-#define START_STOP_MASK_PTT	0x40
 #define TEMPO_TAP_MASK_PTT	0x80
 
 /* Macro 'function' definitions */
 #define HIDE_CURSOR(LCD)			(chgline(LINE2_END + 1, (LCD)))
 #define CURSOR_TO_BEAT()			(chgline(BEAT_SET, LEFT_LCD))
+#define CURSOR_TO_BPM()				(chgline(BPM_SET, LEFT_LCD))
 #define CURSOR_TO_TSNUM()			(chgline(TSNUM_SET, LEFT_LCD))
 #define CURSOR_TO_TSDEN()			(chgline(TSDEN_SET, LEFT_LCD))
 #define CURSOR_TO_SUBDIV()			(chgline(SUBDIV_SET, RIGHT_LCD))
@@ -73,6 +75,7 @@ void tssub_inc(void);
 #define CURSOR_TO_SUBDIV_ACCENT()	(chgline(SUBDIV_ACCENT_SET, RIGHT_LCD))
 
 #define UPDATE_BEAT()				print_note(tsbeat, LEFT_LCD)
+#define UPDATE_BPM(val)				print3digits(val, LEFT_LCD)
 #define UPDATE_TSNUM()				print2digits(tsnum, LEFT_LCD);
 #define UPDATE_TSDEN()				print2digits(tsden, LEFT_LCD);
 #define UPDATE_SUBDIV()				print_note(tssub, RIGHT_LCD);
@@ -87,7 +90,7 @@ unsigned int  beatcnt  = 0;		// Number of MAX_DEN notes since the last beat puls
 unsigned int  meascnt  = 0;		// Number of pulse notes since the last measure pulse
 unsigned int  subcnt   = 0;		// Number of MAX_DEN notes since the last subdivision pulse
 
-unsigned char bpm      = 120;	// Desired tempo in beats per minute
+unsigned int  bpm      = 120;	// Desired tempo in beats per minute
 unsigned char error    = 0;		// Rounding error: used to determine if metcnt should be rounded up or down
 
 unsigned char beat_accent    = 0;		// Beat accent setting
@@ -96,7 +99,6 @@ unsigned char subdiv_accent  = 0;		// Subdivision accent setting
 
 unsigned char set_inc    = 0;		// Setting Increment Flag
 unsigned char set_tog    = 0;		// Setting Toggle Flag
-unsigned char start_stop = 0;		// Start/Stop Flag
 unsigned char tempo_tap  = 0;		// Pushbutton 7 flag: Tap in Tempo
 unsigned char prevpb     = 0xF0;	// Previous pushbutton statuses
 unsigned char pbstat     = 0xF0;	// Current pushbutton statuses
@@ -119,15 +121,20 @@ unsigned int avg    = 0;
 unsigned int ratio  = 0;
 unsigned int iratio = 0;
 
-unsigned int buffer[BUF_SIZE];
-unsigned int buf_cnt = 0;
-unsigned char pitch_val = 0;
-unsigned char pitch_on  = 0;
+unsigned int buffer[BUF_SIZE];	// Buffer to hold sinewave values over one period
+unsigned int buf_cnt = 0;		// Current point in the above buffer that the PWM is outputting
+unsigned char pitch_val = 0;	// Variable to control the pitch of the speaker sound by "skipping" buffer
+								// values to increase or decrease the wave output on the PWM
+unsigned char pitch_on  = 0;	// Flag for allowing the PWM to output sound to the speaker
 
-unsigned char send_pulse  = 0;
-unsigned char send_beat   = 0;
-unsigned char send_meas   = 0;
-unsigned char send_subdiv = 0;
+unsigned char send_pulse  = 0;	// Flag for outputing a pulse sound
+unsigned char send_beat   = 0;	// Flag for outputing a beat sound
+unsigned char send_meas   = 0;	// Flag for outputing a measure sound
+unsigned char send_subdiv = 0;	// Flag for outputing a subdivision sound
+
+unsigned char atd_prev = 0;
+unsigned char atd_curr = 0;
+unsigned int  new_bpm  = 120;
 
 /*
 ***********************************************************************
@@ -159,6 +166,12 @@ void  initializations(void) {
 	RTICTL  = 0x5F;
 	DDRAD   = DDRAD & 0x0F;	// Set PAD pins 4, 5, 6, and 7 as inputs
 	ATDDIEN = ATDDIEN | 0xF0;
+
+	/* Initialize ATD Ch 0 for input */
+	ATDCTL2 = 0x80;
+	ATDCTL3 = 0x08;
+	ATDCTL4 = 0x85;
+	ATDDIEN = ATDDIEN | 0x01;
 
 	/* Initialize TIM Ch 7 (TC7) for periodic interrupts every 240 microseconds
 		- Enable timer subsystem
@@ -292,11 +305,6 @@ void main(void) {
 	TIE = TIE | 0x80; // Enable Ch 7 interrupts
 
 	for(;;) {
-		// If pushbutton 6 is pressed, start/stop metronome
-		if(start_stop) {
-			start_stop = 0;
-			runstp = !runstp;
-		}
 		// If left pushbutton is pressed, enter setup mode
 		// Flash necessary setting choices on LCD
 		if(set_tog) {
@@ -309,6 +317,26 @@ void main(void) {
 					tsbeat_inc();
 				}
 			}
+
+			// Dial in Tempo
+			set_tog = 0;
+			CURSOR_TO_BPM();
+			ATDCTL5 = 0x00;
+			while (!(ATDSTAT0 & 0x80)) {}
+			atd_prev = ATDDR0H;
+			while(!set_tog) {
+				ATDCTL5 = 0x00;
+				while (!(ATDSTAT0 & 0x80)) {}
+				atd_curr = ATDDR0H;
+				new_bpm  = bpm + (atd_curr - atd_prev) / BPM_INC * BPM_INC;
+				UPDATE_BPM(new_bpm);
+				CURSOR_TO_BPM();
+				for(i = 0; i < 50; ++i) {
+					lcdwait();
+				}
+			}
+			bpm = new_bpm;
+			metcnt_correct();
 
 			// Time Signature Numerator Select
 			set_tog = 0;
@@ -424,6 +452,8 @@ void main(void) {
 			if(subcnt == 0 && subdiv_accent == 1) {
 				send_subdiv = 1;
 			}
+			// Output corresponding sound based on given flags and the output priority of
+			// Measure > Beat > Pulse > Subdivision
 			if(send_meas) {
 				LED_met(3);
 				send_meas = 0;
@@ -521,7 +551,7 @@ interrupt 15 void TIM_ISR(void) {
 				beats = 0;
 			}
 		}
-		else {
+		else if(curcnt - tmstmp[tapindex - 1] >= (TIM_CONSTANT / MAX_BPM)) {
 			tmstmp[tapindex++] = curcnt;
 			if(beats == 1) {
 				if (tapindex > numbeats - 1) {
@@ -589,6 +619,10 @@ void LED_met(char led) {
 ***********************************************************************
 */
 void metcnt_correct(void) {
+	if(bpm > MAX_BPM) {
+		bpm = MAX_BPM;
+		bpmdisp();
+	}
 	metcnt = TIM_CONSTANT / (bpm * tsbeat);
 	error  = TIM_CONSTANT % (bpm * tsbeat);
 	if(error >= bpm / 2) {
@@ -732,7 +766,7 @@ void print2digits(unsigned char x, char LCD) {
   print3digits: outputs a formatted 3 digit value to the LCD
 ***********************************************************************
 */
-void print3digits(unsigned char x, char LCD) {
+void print3digits(unsigned int x, char LCD) {
 	if(x >= 100) {
 		print_c(x / 100 + '0', LCD);
 	}
@@ -740,7 +774,7 @@ void print3digits(unsigned char x, char LCD) {
 		print_c(' ', LCD);
 	}
 
-	if(x % 100 >= 10) {
+	if(x % 100 >= 10 || x >= 100) {
 		print_c(x / 10 % 10 + '0', LCD);
 	}
 	else {
