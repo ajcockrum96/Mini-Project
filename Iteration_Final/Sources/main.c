@@ -3,7 +3,7 @@
 #include <mc9s12c32.h>
 
 /* All functions after main should be initialized here */
-void LED_met(char led);
+void met_tone(char frequency);
 void metcnt_correct(void);
 void shiftout(char x);
 void lcdwait(void);
@@ -23,17 +23,13 @@ void tsbeat_inc(void);
 void tssub_inc(void);
 
 /* Macro definitions */
-#define TIM_CONSTANT	250000
-#define MAX_BPM			480
+#define TIM_CONSTANT	250000	// Constant calculated based off of TIM module settings that is used to determine metcnt values for different tempos
+#define MAX_BPM			480		// Maximum BPM setting allowed (also used to artificially debounce tap in tempo pushbutton)
 #define MAX_DEN			16		// Maximum Subdivision allowed
 #define MIN_DEN			2		// Minimum Subdivision allowed
 #define BPM_INC			4		// Resolution of bpm settings
 #define BUF_SIZE		100		// PWM Output Function Buffer Size
-
-/* Special LCD char definitions */
-#define DOTTED_NOTE_CHAR	0xAA
-#define EIGHTH_NOTE_CHAR	0x91
-#define HALF_NOTE_CHAR		'd'
+#define TONE_LEN		10		// Length of output tones in terms of 2 ms 'lcdwait()' calls
 
 /* LCD INSTRUCTION CHARACTERS */
 #define LCDON 0x0F		// LCD initialization command
@@ -49,10 +45,13 @@ void tssub_inc(void);
 #define LINE1_END 0x8F	// LCD end of line 1 cursor position
 #define LINE2_END 0xCF	// LCD end of line 2 cursor position
 
+// SETTING POSITIONS ON THE LEFT LCD
 #define BEAT_SET			LINE1
 #define BPM_SET				(LINE1 + 7)
 #define TSNUM_SET			(LINE1_END - 1)
 #define TSDEN_SET			(LINE2_END - 1)
+
+// SETTING POSITIONS ON THE RIGHT LCD
 #define SUBDIV_SET			(LINE1 + 7)
 #define BEAT_ACCENT_SET		(LINE2 + 4)
 #define MEASURE_ACCENT_SET	(LINE2 + 8)
@@ -83,58 +82,61 @@ void tssub_inc(void);
 #define PULSE_DISP()				{chgline(LINE2, LEFT_LCD);	print2digits(meascnt + 1, LEFT_LCD);	HIDE_CURSOR(LEFT_LCD);}
 
 /* Variable declarations */
+// Fundamental Metronome Variables
 unsigned int  curcnt   = 0;		// Number of TIM interrupts since the last MAX_DEN note
 unsigned int  metcnt   = 0;		// Number of TIM interrupts needed for each MAX_DEN note given control register settings, desired bpm, and desired beat length
 unsigned int  pulsecnt = 0;		// Number of MAX_DEN notes since the last normal pulse
 unsigned int  beatcnt  = 0;		// Number of MAX_DEN notes since the last beat pulse
 unsigned int  meascnt  = 0;		// Number of pulse notes since the last measure pulse
 unsigned int  subcnt   = 0;		// Number of MAX_DEN notes since the last subdivision pulse
-
 unsigned int  bpm      = 120;	// Desired tempo in beats per minute
-unsigned char error    = 0;		// Rounding error: used to determine if metcnt should be rounded up or down
+unsigned int  error    = 0;		// Rounding error: used to determine if metcnt should be rounded up or down
+unsigned char runstp   = 1;		// Run/Stop flag used to pause metronome during tap in tempo
 
-unsigned char beat_accent    = 0;		// Beat accent setting
-unsigned char measure_accent = 0;		// Measure accent setting
-unsigned char subdiv_accent  = 0;		// Subdivision accent setting
+// Pushbutton and Flag Variables
+unsigned char set_inc   = 0;		// Setting Increment Flag
+unsigned char set_tog   = 0;		// Setting Toggle Flag
+unsigned char tempo_tap = 0;		// Tap in Tempo Flag
+unsigned char prevpb    = 0xF0;		// Previous pushbutton statuses
+unsigned char pbstat    = 0xF0;		// Current pushbutton statuses
 
-unsigned char set_inc    = 0;		// Setting Increment Flag
-unsigned char set_tog    = 0;		// Setting Toggle Flag
-unsigned char tempo_tap  = 0;		// Pushbutton 7 flag: Tap in Tempo
-unsigned char prevpb     = 0xF0;	// Previous pushbutton statuses
-unsigned char pbstat     = 0xF0;	// Current pushbutton statuses
+// Metronome Setting Variables
+unsigned char tsnum   = 4;			// Time Signature Numerator
+unsigned char tsden   = 4;			// Time Signature Denominator
+unsigned char tsbeat  = 4;			// Length of "beat" in terms of MAX_DEN
+unsigned char tssub   = 4;			// Length of subdivision in terms of MAX_DEN
+unsigned char beat_accent    = 0;	// Beat accent setting
+unsigned char measure_accent = 0;	// Measure accent setting
+unsigned char subdiv_accent  = 0;	// Subdivision accent setting
 
-char tmpch = 0;
-char runstp = 1;
-char i = 0;
+unsigned char atd_prev = 0;			// "Original" ATD value when bpm setting is being "dialed in"
+unsigned char atd_curr = 0;			// Most Recent ATD value when bpm setting is being "dialed in"
+unsigned int  new_bpm  = 120;		// Temporary bpm setting for when bpm setting is being "dialed in"
 
-unsigned char tsnum   = 4;	// Time Signature Numerator
-unsigned char tsden   = 4;	// Time Signature Denominator
-unsigned char tsbeat  = 4;	// Length of "beat" in terms of MAX_DEN
-unsigned char tssub   = 4;	// Length of subdivision in terms of MAX_DEN
+// Misc. Variables
+char tmpch = 0;	// Temp char used for pmsglcd(...)
+char i = 0;		// General purpose loop counter
 
-char tapseq   = 0;
-char tapindex = 0;
-char numbeats = 0;
-char beats    = 0;
-unsigned int tmstmp[MAX_DEN];
-unsigned int avg    = 0;
-unsigned int ratio  = 0;
-unsigned int iratio = 0;
+// "Tap in Tempo" Variables
+char tapseq   = 0;					// Tap Sequence Flag: 1 if tap sequence is being "listened" for via the tap in tempo pushbutton
+char tapindex = 0;					// Current array index of the tap being "listened" for
+char beats    = 0;					// Beats flag: 1 if beats are being counted to tap in the tempo
+char numbeats = 0;					// Number of beats to be clicked into tap in tempo pushbutton (if beats are being used)
+unsigned int tmstmp[MAX_DEN];		// Timestamp array: time values in terms of curcnt to be used to calculate an average of tempo tap periods
+unsigned int avg    = 0;			// Average value of tempo tap periods (used to calculate new bpm)
+unsigned int ratio  = 0;			// Ratio of the number of beats to the number of pulses (the time signature denominator notes)
+unsigned int iratio = 0;			// Ratio of the number of pulses to the number of beats
 
-unsigned int buffer[BUF_SIZE];	// Buffer to hold sinewave values over one period
-unsigned int buf_cnt = 0;		// Current point in the above buffer that the PWM is outputting
+// Tone/Sound Output Variables
+unsigned int  buffer[BUF_SIZE];	// Buffer to hold sinewave values over one period
+unsigned int  buf_cnt = 0;		// Current point in the above buffer that the PWM is outputting
+unsigned char pitch_on  = 0;	// Flag for allowing the PWM to output sound to the speaker
 unsigned char pitch_val = 0;	// Variable to control the pitch of the speaker sound by "skipping" buffer
 								// values to increase or decrease the wave output on the PWM
-unsigned char pitch_on  = 0;	// Flag for allowing the PWM to output sound to the speaker
-
 unsigned char send_pulse  = 0;	// Flag for outputing a pulse sound
 unsigned char send_beat   = 0;	// Flag for outputing a beat sound
 unsigned char send_meas   = 0;	// Flag for outputing a measure sound
 unsigned char send_subdiv = 0;	// Flag for outputing a subdivision sound
-
-unsigned char atd_prev = 0;
-unsigned char atd_curr = 0;
-unsigned int  new_bpm  = 120;
 
 /*
 ***********************************************************************
@@ -201,8 +203,8 @@ void  initializations(void) {
 	DDRM  = 0x30;
 
 	/* Initialize (other) digital I/O port pins */
-	DDRT  = DDRT | 0xFC;	// Set PTT pins 3, 4, 5, 6, and 7 as outputs (LCDs)
-	DDRT  = DDRT | 0x03;	// Set PTT pins 0 and 1 as an outputs (LEDs)
+	DDRT  = DDRT | 0xFC;	// Set PTT pins 2, 3, 4, 5, 6, and 7 as outputs (LCDs)
+	DDRT  = DDRT | 0x02;	// Set PTT pins 1 as an output (PWM)
 
 	/* Initialize the LEFT_LCD
 		- pull LCDCLK high (idle)
@@ -423,6 +425,8 @@ void main(void) {
 			set_tog = 0;
 			HIDE_CURSOR(RIGHT_LCD);
 			metcnt_correct();
+
+			// Restart Metronome
 			pulsecnt = 0;
 			beatcnt = 0;
 			subcnt = 0;
@@ -455,25 +459,25 @@ void main(void) {
 			// Output corresponding sound based on given flags and the output priority of
 			// Measure > Beat > Pulse > Subdivision
 			if(send_meas) {
-				LED_met(3);
+				met_tone(3);
 				send_meas = 0;
 				send_beat = 0;
 				send_pulse = 0;
 				send_subdiv = 0;
 			}
 			else if(send_beat) {
-				LED_met(2);
+				met_tone(2);
 				send_beat = 0;
 				send_pulse = 0;
 				send_subdiv = 0;
 			}
 			else if(send_pulse) {
-				LED_met(1);
+				met_tone(1);
 				send_pulse = 0;
 				send_subdiv = 0;
 			}
 			else if(send_subdiv) {
-				LED_met(0);
+				met_tone(0);
 				send_subdiv = 0;
 			}
 		}
@@ -518,7 +522,7 @@ interrupt 15 void TIM_ISR(void) {
 		PWMDTY1 = buffer[buf_cnt];
 	}
 
-	// Check PAD7 (Tap in Tempo)
+	// Check PAD7 (Tap in Tempo Pushbutton)
 	pbstat = (PTAD & TEMPO_TAP_MASK_PTT);
 	if ((prevpb & TEMPO_TAP_MASK_PTT) && !(pbstat & TEMPO_TAP_MASK_PTT)) {
 		tempo_tap = 1;
@@ -598,13 +602,13 @@ interrupt 20 void SCI_ISR(void) {
 
 /*
 ***********************************************************************
-  LED_met: Controls led outputs for different metronome pulses
+  met_tone: Controls sounds output on PWM for different metronome pulses
 ***********************************************************************
 */
-void LED_met(char led) {
-	pitch_val = led;
+void met_tone(char freq_setting) {
+	pitch_val = freq_setting;
 	pitch_on  = 1;
-	for(i = 0; i < 10; ++i) {
+	for(i = 0; i < TONE_LEN; ++i) {
 		lcdwait();
 	}
 	pitch_on = 0;
@@ -836,6 +840,13 @@ void bpmdisp(void) {
 	HIDE_CURSOR(RIGHT_LCD);
 }
 
+/*
+*********************************************************************** 
+  print_note: outputs note type to LCD based on note length in terms of
+	the number of 16th notes
+	(i.e. if note_len = 2 -> then it takes 2 16th notes, making an 8th note)
+***********************************************************************
+*/
 void print_note(unsigned char note_len, char LCD) {
 	if(MAX_DEN == 16) {
 		switch(note_len) {
@@ -860,6 +871,13 @@ void print_note(unsigned char note_len, char LCD) {
 	}
 }
 
+/*
+*********************************************************************** 
+  tsnum_inc: increments the time signature numerator setting by 1
+	for values 1 through 16 (wrapping around), and then updates the LCD
+	screen appropriately
+***********************************************************************
+*/
 void tsnum_inc(void) {
 	tsnum++;
 	if(tsnum > MAX_DEN || tsnum == 0) {
@@ -869,6 +887,13 @@ void tsnum_inc(void) {
 	CURSOR_TO_TSNUM();
 }
 
+/*
+*********************************************************************** 
+  tsden_inc: increments the time signature denominator setting by powers
+	of 2, for values from MIN_DEN to MAX_DEN (wrapping around) and then
+	updates the LCD screen appropriately
+***********************************************************************
+*/
 void tsden_inc(void) {
 	tsden *= 2;
 	if(tsden > MAX_DEN) {
@@ -878,6 +903,15 @@ void tsden_inc(void) {
 	CURSOR_TO_TSDEN();
 }
 
+/*
+*********************************************************************** 
+  tsbeat_inc: increments the beat length setting between the set values
+	of 1, 2, 3, 4, 6, and 8, which correspond to 16th, 8th, dotted 8th,
+	Quarter, dotted Quarter, and half notes respectively; this function
+	also caps the beat length at notes that can "fit" in one measure
+	(based on time signature settings); lastly, the LCD is updated
+***********************************************************************
+*/
 void tsbeat_inc(void) {
 	switch(tsbeat) {
 		case 1:
@@ -901,6 +935,14 @@ void tsbeat_inc(void) {
 	CURSOR_TO_BEAT();
 }
 
+/*
+*********************************************************************** 
+  tssub_inc: increments the subdivision length by powers of 2 from values
+	of 1 to the length of the beat (based on tsbeat), which correspond to
+	16th notes, 8th notes, and so on that are SMALLER in length than the
+	current beat setting; the LCD is then updated appropriately
+***********************************************************************
+*/
 void tssub_inc(void) {
 	tssub *= 2;
 	if(tssub > tsbeat) {
