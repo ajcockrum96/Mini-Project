@@ -120,12 +120,9 @@ char i = 0;		// General purpose loop counter
 // "Tap in Tempo" Variables
 char tapseq   = 0;					// Tap Sequence Flag: 1 if tap sequence is being "listened" for via the tap in tempo pushbutton
 char tapindex = 0;					// Current array index of the tap being "listened" for
-char beats    = 0;					// Beats flag: 1 if beats are being counted to tap in the tempo
-char numbeats = 0;					// Number of beats to be clicked into tap in tempo pushbutton (if beats are being used)
+char numbeats = 0;					// Number of beats to be clicked into tap in tempo pushbutton
 unsigned int tmstmp[MAX_DEN];		// Timestamp array: time values in terms of curcnt to be used to calculate an average of tempo tap periods
 unsigned int avg    = 0;			// Average value of tempo tap periods (used to calculate new bpm)
-unsigned int ratio  = 0;			// Ratio of the number of beats to the number of pulses (the time signature denominator notes)
-unsigned int iratio = 0;			// Ratio of the number of pulses to the number of beats
 
 // Tone/Sound Output Variables
 unsigned int  buffer[BUF_SIZE];	// Buffer to hold sinewave values over one period
@@ -538,47 +535,19 @@ interrupt 15 void TIM_ISR(void) {
 			tapseq = 1;
 			tapindex = 1;
 
-			// Determine if beats or pulses should be tapped out
-			// Beats are preferred, but are only used if can cleanly (using integers)
-			// be defined in relationship to pulses
-			iratio = (tsbeat * tsden) / MAX_DEN; // pulses to beats
-			ratio  = MAX_DEN / (tsbeat * tsden); // beats to pulses
-			if(iratio != 0 && (tsnum % iratio == 0)) {
-				beats    = 1;
-				numbeats = tsnum / iratio;
-			}
-			else if(ratio != 0 && (ratio * tsbeat == MAX_DEN / tsden)) {
-				beats    = 1;
-				numbeats = tsnum * ratio;
-			}
-			else {
-				beats = 0;
-			}
+			// Calculate number of beats per measure
+			numbeats = tsnum * MAX_DEN / (tsden * tsbeat);
 		}
 		else if(curcnt - tmstmp[tapindex - 1] >= (TIM_CONSTANT / MAX_BPM)) {
 			tmstmp[tapindex++] = curcnt;
-			if(beats == 1) {
-				if (tapindex > numbeats - 1) {
-					tapseq = 0;
-					runstp = 1;
-					avg = 0;
-					for (i = numbeats - 1; i > 0; --i) {
-						avg += (tmstmp[i] - tmstmp[i - 1]) / (numbeats - 1);
-					}
-					bpm = TIM_CONSTANT / avg;
+			if (tapindex > numbeats - 1) {
+				tapseq = 0;
+				runstp = 1;
+				avg = 0;
+				for (i = numbeats - 1; i > 0; --i) {
+					avg += (tmstmp[i] - tmstmp[i - 1]) / (numbeats - 1);
 				}
-			}
-			else {
-				if (tapindex > tsnum - 1) {
-					tapseq = 0;
-					runstp = 1;
-					avg = 0;
-					for (i = tsnum - 1; i > 0; --i) {
-						avg += (tmstmp[i] - tmstmp[i - 1]) / (tsnum - 1);
-					}
-					// FIXME: Currently working here!!!
-					bpm = TIM_CONSTANT / avg * MAX_DEN / (tsbeat * tsden);	// Modify for not using beats as tapping
-				}
+				bpm = TIM_CONSTANT / avg;
 			}
 
 			error = bpm % BPM_INC;	// Determine error from multiple of BPM_INC
