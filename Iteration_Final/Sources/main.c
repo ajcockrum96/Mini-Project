@@ -160,7 +160,7 @@ void  initializations(void) {
 	DDRB	 =	0x10; //set PB4 for output mode
 	PORTB	 =	0x10; //assert DTR pin on COM port
 
-	/* Initialize RTI for a 2.048 ms interrupt rate */
+	/* Initialize RTI for a 32.768 ms interrupt rate */
 	CRGINT  = CRGINT | 0x80;
 	RTICTL  = 0x5F;
 	DDRAD   = DDRAD & 0x0F;	// Set PAD pins 4, 5, 6, and 7 as inputs
@@ -548,15 +548,14 @@ interrupt 15 void TIM_ISR(void) {
 					avg += (tmstmp[i] - tmstmp[i - 1]) / (numbeats - 1);
 				}
 				bpm = TIM_CONSTANT / avg;
+				error = bpm % BPM_INC;	// Determine error from multiple of BPM_INC
+				bpm = bpm / BPM_INC * BPM_INC;	// Truncate to multiple of BPM_INC
+				if(error >= BPM_INC / 2) {	// Round to nearest multiple of BPM_INC
+					bpm += BPM_INC;
+				}
+				metcnt_correct();
+				bpmdisp();
 			}
-
-			error = bpm % BPM_INC;	// Determine error from multiple of BPM_INC
-			bpm = bpm / BPM_INC * BPM_INC;	// Truncate to multiple of BPM_INC
-			if(error >= BPM_INC / 2) {	// Round to nearest multiple of BPM_INC
-				bpm += BPM_INC;
-			}
-			metcnt_correct();
-			bpmdisp();
 		}
 	}
 }
